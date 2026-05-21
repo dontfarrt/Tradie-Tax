@@ -675,10 +675,12 @@
     <div class="summary-card">
       <div class="card-label">Income YTD</div>
       <div class="card-value highlight" id="dash-gross">$0.00</div>
+      <div class="card-sub" id="dash-gross-sub" style="display:none"></div>
     </div>
     <div class="summary-card blue">
       <div class="card-label">Expenses YTD</div>
       <div class="card-value" id="dash-expenses">$0.00</div>
+      <div class="card-sub" id="dash-expenses-sub" style="display:none"></div>
     </div>
     <div class="summary-card green">
       <div class="card-label">Profit YTD</div>
@@ -1319,13 +1321,21 @@ const Calc = {
 
   invoiceProfit(inv) { return this.exGst(inv.total) - this.exGst(inv.materials || 0); },
 
-  totals() {
+  totals(includeHistorical = true) {
     const inv = State.invoices.filter(i => inCurrentFY(i.date));
     const exp = State.expenses.filter(e => inCurrentFY(e.date));
     const mil = State.mileage.filter(m => inCurrentFY(m.date));
     const ast = State.assets.filter(a => inCurrentFY(a.date));
 
-    const gross = inv.reduce((s,i) => s + this.exGst(i.total), 0);
+    // Historical figures from Tax Estimate page (only added if includeHistorical)
+    const f = State.formState;
+    const num = k => parseFloat(f[k]) || 0;
+    const pastGross = includeHistorical ? num('ytd-gross') : 0;
+    const pastExpenses = includeHistorical ? num('ytd-materials') : 0;
+    const otherDeductions = includeHistorical ? num('other-deductions') : 0;
+
+    const loggedGross = inv.reduce((s,i) => s + this.exGst(i.total), 0);
+    const gross = loggedGross + pastGross;
     const invoiceMaterials = inv.reduce((s,i) => s + this.exGst(i.materials || 0), 0);
     const expenseTotal = exp.reduce((s,e) => s + this.exGst(e.amount), 0);
     const milKm = mil.reduce((s,m) => s + (m.km || 0), 0);
@@ -1333,16 +1343,16 @@ const Calc = {
     const assetWriteoff = ast
       .filter(a => a.amount <= State.settings.assetThreshold)
       .reduce((s,a) => s + this.exGst(a.amount), 0);
-    // Asset pool depreciation (simplified): items over threshold this year added at 15%
     const poolNewThisYear = ast
       .filter(a => a.amount > State.settings.assetThreshold)
       .reduce((s,a) => s + this.exGst(a.amount), 0);
     const poolDepNewYear = poolNewThisYear * 0.15;
 
-    const totalExpenses = invoiceMaterials + expenseTotal + milDeduction + assetWriteoff + poolDepNewYear;
+    const totalExpenses = invoiceMaterials + expenseTotal + milDeduction +
+      assetWriteoff + poolDepNewYear + pastExpenses + otherDeductions;
     const profit = gross - totalExpenses;
 
-    // GST
+    // GST (only on logged data, not historical)
     const gstCollected = State.settings.gstMode
       ? inv.reduce((s,i) => s + this.gstOf(i.total), 0)
       : 0;
@@ -1353,7 +1363,8 @@ const Calc = {
     const gstOwed = gstCollected - gstPaid;
 
     return {
-      gross, invoiceMaterials, expenseTotal, milKm, milDeduction,
+      gross, loggedGross, pastGross, pastExpenses, otherDeductions,
+      invoiceMaterials, expenseTotal, milKm, milDeduction,
       assetWriteoff, poolNewThisYear, poolDepNewYear, totalExpenses,
       profit, count: inv.length, expCount: exp.length,
       gstCollected, gstPaid, gstOwed
@@ -1402,13 +1413,11 @@ const Calc = {
     const paygIncome = num('payg-income');
     const withheld = num('payg-withheld');
     const extraPaid = num('payg-extra');
-    const otherDeductions = num('other-deductions');
-    const pastGross = num('ytd-gross');
-    const pastExpenses = num('ytd-materials');
 
+    // totals() now already includes historical figures
     const t = this.totals();
-    const bizGross = t.gross + pastGross;
-    const bizExpenses = t.totalExpenses + pastExpenses + otherDeductions;
+    const bizGross = t.gross;
+    const bizExpenses = t.totalExpenses;
     const bizProfit = Math.max(0, bizGross - bizExpenses);
     const totalIncome = paygIncome + bizProfit;
     const taxOwed = this.calcTaxOwed(totalIncome);
@@ -1423,8 +1432,8 @@ const Calc = {
     const refund = Math.max(0, totalCredits - taxOwed);
 
     return {
-      paygIncome, withheld, extraPaid, otherDeductions,
-      pastGross, pastExpenses, bizGross, bizExpenses, bizProfit,
+      paygIncome, withheld, extraPaid,
+      bizGross, bizExpenses, bizProfit,
       totalIncome, taxOwed, totalCredits, paygPaidThisFY,
       stillOwed, refund, ...t
     };
@@ -1670,6 +1679,24 @@ const UI = {
     document.getElementById('dash-profit').textContent = fmt(t.profit);
     document.getElementById('dash-setaside').textContent = fmt(sa.target);
     document.getElementById('dash-rate').textContent = rate;
+
+    // Historical inclusion sub-labels on income/expense tiles
+    const hasHistorical = (t.pastGross + t.pastExpenses + t.otherDeductions) > 0;
+    const grossSub = document.getElementById('dash-gross-sub');
+    const expSub = document.getElementById('dash-expenses-sub');
+    if (grossSub) {
+      grossSub.textContent = hasHistorical && t.pastGross > 0
+        ? `${fmt(t.loggedGross)} logged + ${fmt(t.pastGross)} past`
+        : '';
+      grossSub.style.display = hasHistorical && t.pastGross > 0 ? 'block' : 'none';
+    }
+    if (expSub) {
+      const histExp = t.pastExpenses + t.otherDeductions;
+      expSub.textContent = histExp > 0
+        ? `Incl. ${fmt(histExp)} past/other`
+        : '';
+      expSub.style.display = histExp > 0 ? 'block' : 'none';
+    }
 
     // Overdue
     const overdue = Calc.overdueInvoices();
@@ -2528,7 +2555,9 @@ const UI = {
   // ── TAX ESTIMATE ───────────────────────────────
   renderEstimate() {
     const e = Calc.estimate();
-    const sourceLabel = e.pastGross > 0 ? `${fmt(e.pastGross)} past + ${fmt(e.gross)} logged` : `From ${e.count} logged invoice${e.count !== 1 ? 's' : ''}`;
+    const sourceLabel = e.pastGross > 0
+      ? `${fmt(e.loggedGross)} logged + ${fmt(e.pastGross)} past`
+      : `From ${e.count} logged invoice${e.count !== 1 ? 's' : ''}`;
     const expensesParts = [];
     if (e.invoiceMaterials > 0) expensesParts.push(fmt(e.invoiceMaterials) + ' materials');
     if (e.expenseTotal > 0) expensesParts.push(fmt(e.expenseTotal) + ' expenses');
@@ -2994,8 +3023,53 @@ window.addEventListener('beforeunload', () => {
 });
 
 if ('serviceWorker' in navigator) {
-  window.addEventListener('load', () => {
-    navigator.serviceWorker.register('sw.js').catch(err => console.warn('SW reg failed', err));
+  window.addEventListener('load', async () => {
+    try {
+      const reg = await navigator.serviceWorker.register('sw.js');
+
+      // Check for updates every time the app comes to foreground
+      const checkForUpdates = () => reg.update().catch(() => {});
+      window.addEventListener('focus', checkForUpdates);
+      document.addEventListener('visibilitychange', () => {
+        if (document.visibilityState === 'visible') checkForUpdates();
+      });
+
+      // When a new SW is installed and waiting, prompt the user
+      const promptUpdate = (worker) => {
+        if (!worker) return;
+        const banner = document.createElement('div');
+        banner.style.cssText = 'position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:#f0a500;color:#111;padding:12px 16px;border-radius:4px;font-family:"Barlow Condensed",sans-serif;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;font-size:13px;z-index:400;box-shadow:0 6px 20px rgba(0,0,0,0.5);display:flex;gap:12px;align-items:center;max-width:92vw;';
+        banner.innerHTML = '<span>New version available</span><button style="background:#111;color:#f0a500;border:none;padding:6px 12px;border-radius:3px;font-weight:700;text-transform:uppercase;cursor:pointer;font-family:inherit;font-size:12px">Reload</button>';
+        banner.querySelector('button').addEventListener('click', () => {
+          worker.postMessage('SKIP_WAITING');
+        });
+        document.body.appendChild(banner);
+      };
+
+      // If there's already a waiting worker on load
+      if (reg.waiting) promptUpdate(reg.waiting);
+
+      // Listen for new ones being installed
+      reg.addEventListener('updatefound', () => {
+        const newWorker = reg.installing;
+        if (!newWorker) return;
+        newWorker.addEventListener('statechange', () => {
+          if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+            promptUpdate(newWorker);
+          }
+        });
+      });
+
+      // When the new worker takes control, reload the page
+      let refreshing = false;
+      navigator.serviceWorker.addEventListener('controllerchange', () => {
+        if (refreshing) return;
+        refreshing = true;
+        window.location.reload();
+      });
+    } catch (err) {
+      console.warn('SW reg failed', err);
+    }
   });
 }
 
