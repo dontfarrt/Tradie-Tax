@@ -1191,7 +1191,7 @@ const Storage = {
 // ════════════════════════════════════════════════════
 //  IMAGE UTILS — compress photos before storage
 // ════════════════════════════════════════════════════
-async function compressImage(file, maxDim = 1200, quality = 0.7) {
+async function compressImage(file, maxDim = 1200, quality = 0.7, format = 'jpeg') {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
     reader.onload = e => {
@@ -1205,8 +1205,15 @@ async function compressImage(file, maxDim = 1200, quality = 0.7) {
         const canvas = document.createElement('canvas');
         canvas.width = width; canvas.height = height;
         const ctx = canvas.getContext('2d');
+        // For JPEG fill white background (otherwise alpha goes black);
+        // for PNG keep canvas transparent so alpha is preserved.
+        if (format === 'jpeg') {
+          ctx.fillStyle = '#ffffff';
+          ctx.fillRect(0, 0, width, height);
+        }
         ctx.drawImage(img, 0, 0, width, height);
-        resolve(canvas.toDataURL('image/jpeg', quality));
+        const mime = format === 'png' ? 'image/png' : 'image/jpeg';
+        resolve(canvas.toDataURL(mime, quality));
       };
       img.onerror = reject;
       img.src = e.target.result;
@@ -1845,8 +1852,12 @@ const UI = {
 
       <div class="form-group"><label>Receipt Photos</label>
         <div class="image-grid" id="f-photos"></div>
-        <button class="btn btn-secondary btn-small" id="f-add-photo" style="width:100%; margin-top:6px">📷 Add Photo</button>
-        <input type="file" id="f-photo-file" accept="image/*" capture="environment" style="display:none">
+        <div class="btn-row" style="margin-top:6px">
+          <button class="btn btn-secondary btn-small" id="f-add-camera" style="flex:1">📷 Camera</button>
+          <button class="btn btn-secondary btn-small" id="f-add-upload" style="flex:1">📁 Upload</button>
+        </div>
+        <input type="file" id="f-photo-cam" accept="image/*" capture="environment" style="display:none">
+        <input type="file" id="f-photo-up" accept="image/*" multiple style="display:none">
       </div>
 
       <div class="btn-row" style="margin-top:14px">
@@ -1891,16 +1902,26 @@ const UI = {
       document.getElementById('f-paid').classList.remove('active');
     });
 
-    document.getElementById('f-add-photo').addEventListener('click', () => document.getElementById('f-photo-file').click());
-    document.getElementById('f-photo-file').addEventListener('change', async e => {
-      const file = e.target.files[0]; if (!file) return;
-      this.toast('Compressing photo...');
-      const data = await compressImage(file);
-      const pid = newId();
-      await Storage.setPhoto(pid, data);
-      photos.push(pid);
+    document.getElementById('f-add-camera').addEventListener('click', () => document.getElementById('f-photo-cam').click());
+    document.getElementById('f-add-upload').addEventListener('click', () => document.getElementById('f-photo-up').click());
+    const handlePhotoFiles = async (files) => {
+      if (!files || !files.length) return;
+      this.toast(`Compressing ${files.length} photo${files.length>1?'s':''}...`);
+      for (const file of files) {
+        try {
+          const data = await compressImage(file);
+          const pid = newId();
+          await Storage.setPhoto(pid, data);
+          photos.push(pid);
+        } catch (err) { console.warn('compress fail', err); }
+      }
       renderPhotos();
-      e.target.value = '';
+    };
+    document.getElementById('f-photo-cam').addEventListener('change', async e => {
+      await handlePhotoFiles(e.target.files); e.target.value = '';
+    });
+    document.getElementById('f-photo-up').addEventListener('change', async e => {
+      await handlePhotoFiles(e.target.files); e.target.value = '';
     });
 
     document.getElementById('f-cancel').addEventListener('click', () => this.closeModal());
@@ -2029,8 +2050,12 @@ const UI = {
       <div class="form-group"><label>Notes</label><textarea id="f-notes">${existing ? escape(existing.notes || '') : ''}</textarea></div>
       <div class="form-group"><label>Receipt Photos</label>
         <div class="image-grid" id="f-photos"></div>
-        <button class="btn btn-secondary btn-small" id="f-add-photo" style="width:100%; margin-top:6px">📷 Add Photo</button>
-        <input type="file" id="f-photo-file" accept="image/*" capture="environment" style="display:none">
+        <div class="btn-row" style="margin-top:6px">
+          <button class="btn btn-secondary btn-small" id="f-add-camera" style="flex:1">📷 Camera</button>
+          <button class="btn btn-secondary btn-small" id="f-add-upload" style="flex:1">📁 Upload</button>
+        </div>
+        <input type="file" id="f-photo-cam" accept="image/*" capture="environment" style="display:none">
+        <input type="file" id="f-photo-up" accept="image/*" multiple style="display:none">
       </div>
       <div class="btn-row" style="margin-top:14px">
         ${existing ? '<button class="btn btn-danger" id="f-delete">Delete</button>' : ''}
@@ -2076,16 +2101,26 @@ const UI = {
       });
     }
 
-    document.getElementById('f-add-photo').addEventListener('click', () => document.getElementById('f-photo-file').click());
-    document.getElementById('f-photo-file').addEventListener('change', async e => {
-      const file = e.target.files[0]; if (!file) return;
-      this.toast('Compressing photo...');
-      const data = await compressImage(file);
-      const pid = newId();
-      await Storage.setPhoto(pid, data);
-      photos.push(pid);
+    document.getElementById('f-add-camera').addEventListener('click', () => document.getElementById('f-photo-cam').click());
+    document.getElementById('f-add-upload').addEventListener('click', () => document.getElementById('f-photo-up').click());
+    const handlePhotoFiles = async (files) => {
+      if (!files || !files.length) return;
+      this.toast(`Compressing ${files.length} photo${files.length>1?'s':''}...`);
+      for (const file of files) {
+        try {
+          const data = await compressImage(file);
+          const pid = newId();
+          await Storage.setPhoto(pid, data);
+          photos.push(pid);
+        } catch (err) { console.warn('compress fail', err); }
+      }
       renderPhotos();
-      e.target.value = '';
+    };
+    document.getElementById('f-photo-cam').addEventListener('change', async e => {
+      await handlePhotoFiles(e.target.files); e.target.value = '';
+    });
+    document.getElementById('f-photo-up').addEventListener('change', async e => {
+      await handlePhotoFiles(e.target.files); e.target.value = '';
     });
 
     document.getElementById('f-cancel').addEventListener('click', () => this.closeModal());
@@ -2492,59 +2527,166 @@ const UI = {
     const gst = State.settings.gstMode ? subtotal * 0.1 : 0;
     const total = subtotal + gst;
     const biz = State.business;
-    const html = `<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Quote #${escape(q.number)}</title>
-      <style>
-        @page { margin: 18mm; size: A4; }
-        body { font-family: 'Helvetica', Arial, sans-serif; color: #222; padding: 0; max-width: 800px; margin: 0 auto; }
-        .h { display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 2px solid #222; padding-bottom: 14px; margin-bottom: 22px; }
-        .logo { max-width: 140px; max-height: 90px; object-fit: contain; }
-        .biz { text-align: right; font-size: 11px; line-height: 1.5; }
-        .biz strong { display: block; font-size: 17px; margin-bottom: 5px; text-transform: uppercase; letter-spacing: 0.04em; }
-        h1 { font-size: 30px; text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 16px; }
-        .meta { display: grid; grid-template-columns: 1fr 1fr; gap: 22px; font-size: 12px; margin-bottom: 22px; }
-        .meta strong { display: block; font-size: 10px; text-transform: uppercase; letter-spacing: 0.08em; color: #666; margin-bottom: 3px; }
-        table { width: 100%; border-collapse: collapse; margin-bottom: 18px; font-size: 12px; }
-        th { text-align: left; background: #f5f5f5; padding: 8px 10px; font-size: 11px; text-transform: uppercase; letter-spacing: 0.06em; border-bottom: 1px solid #999; }
-        th.r, td.r { text-align: right; }
-        td { padding: 8px 10px; border-bottom: 1px solid #eee; }
-        td.r { font-family: 'Courier New', monospace; }
-        .tot-table { width: 50%; margin-left: auto; font-size: 13px; }
-        .tot-table tr.tot { background: #f5f5f5; font-weight: 700; }
-        .tot-table tr.tot td { border-bottom: 2px solid #222; border-top: 2px solid #222; }
-        .notes { font-size: 11px; color: #555; border-top: 1px solid #eee; padding-top: 12px; margin-top: 22px; line-height: 1.6; white-space: pre-wrap; }
-        .print-btn { position: fixed; top: 20px; right: 20px; padding: 10px 20px; background: #f0a500; color: #111; border: none; font-weight: bold; cursor: pointer; border-radius: 4px; }
-        @media print { .print-btn { display: none; } }
-      </style></head><body>
+
+    const css = `
+      @page { margin: 14mm 12mm; size: A4; }
+      * { box-sizing: border-box; margin: 0; padding: 0; }
+      body { font-family: Arial, Helvetica, sans-serif; color: #2a2a2a; font-size: 11px; line-height: 1.4; max-width: 800px; margin: 0 auto; padding: 8px; }
+      .print-btn { position: fixed; top: 16px; right: 16px; padding: 10px 18px; background: #f0a500; color: #111; border: none; font-weight: 700; cursor: pointer; border-radius: 3px; font-size: 13px; z-index: 99; }
+      @media print { .print-btn { display: none; } body { padding: 0; } }
+
+      /* ── HEADER ─────────────────────── */
+      .header { display: flex; justify-content: space-between; align-items: flex-start; padding-bottom: 18px; }
+      .logo-wrap { flex-shrink: 0; }
+      .logo-wrap img { max-width: 120px; max-height: 120px; object-fit: contain; }
+      .biz-block { text-align: right; line-height: 1.45; }
+      .biz-block .biz-name { font-size: 17px; font-weight: 700; margin-bottom: 2px; }
+      .biz-block .biz-contact { font-size: 11px; color: #2a2a2a; }
+
+      /* ── TITLE + META ────────────────── */
+      .title-row { display: flex; justify-content: space-between; align-items: flex-end; gap: 30px; margin-top: 4px; margin-bottom: 18px; }
+      .doc-title { font-size: 28px; font-weight: 700; letter-spacing: -0.5px; }
+      .meta-row { display: flex; gap: 40px; }
+      .meta-cell { text-align: right; }
+      .meta-cell .meta-label { font-size: 11px; font-weight: 700; color: #2a2a2a; margin-bottom: 1px; }
+      .meta-cell .meta-val { font-size: 11px; color: #2a2a2a; }
+
+      /* ── BILL TO ──────────────────────── */
+      .bill-to-label { font-size: 11px; font-weight: 700; margin-bottom: 4px; }
+      .bill-to { font-size: 11px; font-style: italic; color: #2a2a2a; line-height: 1.5; margin-bottom: 14px; }
+
+      /* ── TABLE ────────────────────────── */
+      .table-wrap { border-top: 3px solid #f0a500; }
+      table.items { width: 100%; border-collapse: collapse; margin-top: 10px; }
+      table.items th { text-align: left; padding: 8px 8px 10px; font-size: 11px; font-weight: 700; border-bottom: 1px solid #ccc; vertical-align: top; }
+      table.items th.r { text-align: right; }
+      table.items th .sub { display: block; font-size: 9.5px; font-weight: 400; font-style: italic; color: #666; margin-top: 1px; }
+      table.items td { padding: 9px 8px; font-size: 11px; vertical-align: top; }
+      table.items td.r { text-align: right; }
+      table.items tr.line-row td { border-bottom: 1px solid #eee; }
+      table.items td.desc { line-height: 1.5; white-space: pre-wrap; }
+
+      /* ── BOTTOM ROW (notes + totals) ──── */
+      .bottom-row { display: flex; margin-top: 6px; gap: 24px; }
+      .notes-block { flex: 1; padding-top: 12px; border-top: 1px solid #ccc; }
+      .notes-label { font-size: 11px; font-weight: 700; margin-bottom: 4px; }
+      .notes-text { font-size: 11px; line-height: 1.5; white-space: pre-wrap; color: #2a2a2a; }
+      .totals-block { flex: 0 0 280px; padding-top: 0; }
+      .totals-block table { width: 100%; border-collapse: collapse; }
+      .totals-block td { padding: 6px 8px; font-size: 11px; }
+      .totals-block td.label { text-align: right; }
+      .totals-block td.val { text-align: right; min-width: 90px; }
+      .totals-block tr.total td { background: #f0f0f0; font-weight: 700; font-size: 13px; padding-top: 9px; padding-bottom: 9px; }
+      .totals-block tr.divider td { border-top: 1px solid #ccc; padding-top: 0; padding-bottom: 0; height: 1px; }
+
+      /* ── PAYMENT SECTION ─────────────── */
+      .pay-section { margin-top: 40px; }
+      .pay-summary { display: flex; gap: 30px; padding-bottom: 8px; border-bottom: 1px solid #ccc; font-size: 11px; }
+      .pay-summary .pay-summary-cell strong { font-weight: 700; }
+      .pay-header { font-size: 15px; font-weight: 700; margin: 14px 0 10px; }
+      .pay-method { display: flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 700; margin-bottom: 10px; }
+      .pay-method .pay-icon { width: 22px; height: 22px; background: #2a2a2a; color: white; border-radius: 3px; display: flex; align-items: center; justify-content: center; font-size: 13px; }
+      .pay-details { font-size: 11px; line-height: 1.7; white-space: pre-wrap; }
+      .pay-details strong { font-weight: 700; }
+
+      /* ── FOOTER ──────────────────────── */
+      .footer { margin-top: 30px; padding-top: 10px; border-top: 1px solid #ddd; display: flex; justify-content: space-between; font-size: 10px; color: #666; }
+    `;
+
+    const lineRows = q.lineItems.map(li => `
+      <tr class="line-row">
+        <td class="desc">${escape(li.desc).replace(/\n/g, '<br>')}</td>
+        <td class="r">${li.qty}</td>
+        <td class="r">${fmt(li.rate)}</td>
+        <td class="r">${State.settings.gstMode ? 'GST' : 'N-T'}</td>
+        <td class="r">${fmt(li.qty * li.rate)}</td>
+      </tr>
+    `).join('');
+
+    const bizContactLines = [
+      biz.phone ? `Phone: ${escape(biz.phone)}` : '',
+      biz.email ? escape(biz.email) : '',
+      biz.abn ? `ABN: ${escape(biz.abn)}` : ''
+    ].filter(Boolean).join('<br>');
+
+    const html = `<!DOCTYPE html><html><head><meta charset="UTF-8">
+      <title>Quote ${escape(q.number)}</title>
+      <style>${css}</style></head><body>
       <button class="print-btn" onclick="window.print()">Print / Save as PDF</button>
-      <div class="h">
-        ${biz.logo ? `<img src="${biz.logo}" class="logo">` : '<div></div>'}
-        <div class="biz">
-          <strong>${escape(biz.name || 'Your Business')}</strong>
-          ${biz.abn ? `ABN: ${escape(biz.abn)}<br>` : ''}
-          ${biz.address ? escape(biz.address).replace(/\n/g, '<br>') + '<br>' : ''}
-          ${biz.phone ? escape(biz.phone) + '<br>' : ''}
-          ${biz.email ? escape(biz.email) : ''}
+
+      <div class="header">
+        <div class="logo-wrap">${biz.logo ? `<img src="${biz.logo}">` : ''}</div>
+        <div class="biz-block">
+          <div class="biz-name">${escape(biz.name || 'Your Business')}</div>
+          <div class="biz-contact">${bizContactLines}</div>
         </div>
       </div>
-      <h1>Quote</h1>
-      <div class="meta">
-        <div><strong>Quote To</strong>${escape(q.client || '—')}${q.clientAddress ? '<br>' + escape(q.clientAddress).replace(/\n/g, '<br>') : ''}</div>
-        <div><strong>Quote Details</strong>#${escape(q.number)}<br>Date: ${q.date}${q.validUntil ? '<br>Valid until: ' + q.validUntil : ''}</div>
+
+      <div class="title-row">
+        <div class="doc-title">Quote</div>
+        <div class="meta-row">
+          <div class="meta-cell"><div class="meta-label">Quote number</div><div class="meta-val">${escape(q.number)}</div></div>
+          <div class="meta-cell"><div class="meta-label">Issue date</div><div class="meta-val">${q.date || ''}</div></div>
+          ${q.validUntil ? `<div class="meta-cell"><div class="meta-label">Valid until</div><div class="meta-val">${q.validUntil}</div></div>` : ''}
+        </div>
       </div>
-      <table>
-        <thead><tr><th>Description</th><th class="r">Qty</th><th class="r">Rate</th><th class="r">Amount</th></tr></thead>
-        <tbody>
-          ${q.lineItems.map(li => `<tr><td>${escape(li.desc)}</td><td class="r">${li.qty}</td><td class="r">${fmt(li.rate)}</td><td class="r">${fmt(li.qty * li.rate)}</td></tr>`).join('')}
-        </tbody>
-      </table>
-      <table class="tot-table">
-        <tr><td>Subtotal</td><td class="r">${fmt(subtotal)}</td></tr>
-        ${State.settings.gstMode ? `<tr><td>GST (10%)</td><td class="r">${fmt(gst)}</td></tr>` : ''}
-        <tr class="tot"><td>Total</td><td class="r">${fmt(total)}</td></tr>
-      </table>
-      ${q.notes ? `<div class="notes">${escape(q.notes)}</div>` : ''}
-      ${biz.bank ? `<div class="notes"><strong>Payment Details</strong><br>${escape(biz.bank)}</div>` : ''}
+
+      <div class="bill-to-label">Quote to</div>
+      <div class="bill-to">
+        ${escape(q.client || '—')}
+        ${q.clientAddress ? '<br>' + escape(q.clientAddress).replace(/\n/g, '<br>') : ''}
+      </div>
+
+      <div class="table-wrap">
+        <table class="items">
+          <thead>
+            <tr>
+              <th>Description</th>
+              <th class="r">Units<span class="sub">excluding tax</span></th>
+              <th class="r">Unit price ($)<span class="sub">excluding tax</span></th>
+              <th class="r">Tax</th>
+              <th class="r">Amount ($)<span class="sub">excluding tax</span></th>
+            </tr>
+          </thead>
+          <tbody>${lineRows}</tbody>
+        </table>
+      </div>
+
+      <div class="bottom-row">
+        <div class="notes-block">
+          ${q.notes ? `<div class="notes-label">Notes</div><div class="notes-text">${escape(q.notes)}</div>` : ''}
+        </div>
+        <div class="totals-block">
+          <table>
+            <tr><td class="label">Subtotal <span style="font-style:italic;color:#666;font-size:10px">(exc. tax)</span></td><td class="val">${fmt(subtotal)}</td></tr>
+            <tr><td class="label">Tax</td><td class="val">${fmt(gst)}</td></tr>
+            <tr class="total"><td class="label">Total Amount <span style="font-style:normal;font-size:10px;font-weight:400">(inc. tax)</span></td><td class="val">${fmt(total)}</td></tr>
+          </table>
+        </div>
+      </div>
+
+      ${biz.bank ? `
+        <div class="pay-section">
+          <div class="pay-summary">
+            <div class="pay-summary-cell">Quote number: <strong>${escape(q.number)}</strong></div>
+            ${q.validUntil ? `<div class="pay-summary-cell">Valid until: <strong>${q.validUntil}</strong></div>` : ''}
+            <div class="pay-summary-cell">Total: <strong>${fmt(total)}</strong></div>
+          </div>
+          <div class="pay-header">How to pay</div>
+          <div class="pay-method"><span class="pay-icon">⬢</span> Bank deposit</div>
+          <div class="pay-details">${escape(biz.bank)}</div>
+        </div>
+      ` : ''}
+
+      ${biz.address ? `
+        <div class="footer">
+          <div>${escape(biz.address).replace(/\n/g, ' · ')}</div>
+          <div>Quote ${escape(q.number)} · ${fmt(total)}</div>
+        </div>
+      ` : ''}
+
       </body></html>`;
+
     const blob = new Blob([html], { type: 'text/html' });
     const url = URL.createObjectURL(blob);
     window.open(url, '_blank');
@@ -2687,7 +2829,9 @@ const UI = {
   async uploadLogo(event) {
     const file = event.target.files[0]; if (!file) return;
     this.toast('Compressing logo...');
-    const data = await compressImage(file, 600, 0.85);
+    // PNGs (and anything with potential transparency) keep PNG format
+    const isPng = file.type === 'image/png';
+    const data = await compressImage(file, 600, 1.0, isPng ? 'png' : 'jpeg');
     State.business.logo = data;
     await State.save('business');
     this._showLogo(data);
