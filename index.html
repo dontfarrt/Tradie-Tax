@@ -1,0 +1,1489 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Tax Tracker">
+<meta name="theme-color" content="#111110">
+<link rel="manifest" href="manifest.json">
+<link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
+<link rel="icon" type="image/png" sizes="512x512" href="icon-512.png">
+<link rel="apple-touch-icon" href="icon-192.png">
+<title>Tradie Tax Tracker</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Barlow+Condensed:wght@400;600;700;800&family=Barlow:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #111110;
+    --surface: #1c1c1a;
+    --surface2: #252522;
+    --surface3: #2e2e2a;
+    --border: #2e2e2a;
+    --border-light: #3a3a35;
+    --accent: #f0a500;
+    --accent2: #e05c00;
+    --green: #4caf7d;
+    --red: #e05c5c;
+    --text: #e8e6df;
+    --muted: #7a7870;
+    --font-display: 'Barlow Condensed', sans-serif;
+    --font-body: 'Barlow', sans-serif;
+    --font-mono: 'DM Mono', monospace;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+
+  html, body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--font-body);
+    min-height: 100vh;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  body { padding-bottom: 90px; overscroll-behavior: contain; }
+
+  header {
+    background: var(--surface);
+    border-bottom: 2px solid var(--accent);
+    padding: 14px 18px 12px;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 12px;
+  }
+  .brand { display: flex; align-items: baseline; gap: 10px; }
+  header h1 {
+    font-family: var(--font-display);
+    font-size: 26px;
+    font-weight: 800;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: var(--accent);
+    line-height: 1;
+  }
+  header .subtitle {
+    font-family: var(--font-display);
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+  }
+  .save-status {
+    font-family: var(--font-mono);
+    font-size: 10px;
+    color: var(--muted);
+    transition: color 0.3s, opacity 0.4s;
+  }
+  .save-status.saved { color: var(--green); }
+
+  nav {
+    display: flex;
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    overflow-x: auto;
+    scrollbar-width: none;
+    -webkit-overflow-scrolling: touch;
+  }
+  nav::-webkit-scrollbar { display: none; }
+  nav button {
+    flex: 1;
+    min-width: 80px;
+    padding: 13px 8px;
+    background: none;
+    border: none;
+    border-bottom: 3px solid transparent;
+    color: var(--muted);
+    font-family: var(--font-display);
+    font-size: 13px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: all 0.15s;
+  }
+  nav button.active {
+    color: var(--accent);
+    border-bottom-color: var(--accent);
+  }
+
+  .page { display: none; padding: 18px; max-width: 600px; margin: 0 auto; }
+  .page.active { display: block; }
+
+  .summary-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    margin-bottom: 18px;
+  }
+  .summary-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 13px;
+    position: relative;
+    overflow: hidden;
+  }
+  .summary-card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 3px;
+    background: var(--accent);
+  }
+  .summary-card.green::before { background: var(--green); }
+  .summary-card.orange::before { background: var(--accent2); }
+  .summary-card.muted::before { background: var(--muted); }
+  .card-label {
+    font-family: var(--font-display);
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: var(--muted);
+    margin-bottom: 6px;
+  }
+  .card-value {
+    font-family: var(--font-mono);
+    font-size: 21px;
+    font-weight: 500;
+    color: var(--text);
+    line-height: 1;
+  }
+  .card-value.highlight { color: var(--accent); }
+  .card-value.green-val { color: var(--green); }
+
+  .set-aside-box {
+    background: var(--surface2);
+    border: 2px solid var(--accent);
+    border-radius: 4px;
+    padding: 20px 16px;
+    margin-bottom: 18px;
+    text-align: center;
+    position: relative;
+  }
+  .set-aside-box.green { border-color: var(--green); }
+  .set-aside-label {
+    font-family: var(--font-display);
+    font-size: 13px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    color: var(--muted);
+    margin-bottom: 8px;
+  }
+  .set-aside-amount {
+    font-family: var(--font-mono);
+    font-size: 44px;
+    font-weight: 500;
+    color: var(--accent);
+    line-height: 1;
+    word-break: break-all;
+  }
+  .set-aside-box.green .set-aside-amount { color: var(--green); }
+  .set-aside-sub {
+    font-size: 13px;
+    color: var(--muted);
+    margin-top: 8px;
+  }
+
+  .section-header {
+    font-family: var(--font-display);
+    font-size: 15px;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: var(--muted);
+    border-bottom: 1px solid var(--border);
+    padding-bottom: 8px;
+    margin-bottom: 14px;
+    margin-top: 4px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  .section-header .badge {
+    font-size: 10px;
+    font-weight: 700;
+    color: var(--accent);
+    background: rgba(240,165,0,0.1);
+    padding: 2px 7px;
+    border-radius: 2px;
+    letter-spacing: 0.08em;
+  }
+
+  .form-group { margin-bottom: 12px; }
+  label {
+    display: block;
+    font-family: var(--font-display);
+    font-size: 12px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--muted);
+    margin-bottom: 6px;
+  }
+  input[type="text"], input[type="number"], input[type="date"], select, textarea {
+    width: 100%;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 3px;
+    padding: 12px 14px;
+    color: var(--text);
+    font-family: var(--font-mono);
+    font-size: 15px;
+    outline: none;
+    transition: border-color 0.15s;
+    -webkit-appearance: none;
+    appearance: none;
+  }
+  input[type="date"] { font-family: var(--font-body); }
+  input:focus, select:focus, textarea:focus { border-color: var(--accent); }
+  input::placeholder { color: var(--muted); opacity: 0.5; }
+  select {
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath fill='%237a7870' d='M6 8L0 0h12z'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 14px center;
+    padding-right: 36px;
+  }
+
+  .row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+
+  .btn {
+    display: block;
+    width: 100%;
+    padding: 14px;
+    border: none;
+    border-radius: 3px;
+    font-family: var(--font-display);
+    font-size: 16px;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    cursor: pointer;
+    transition: all 0.15s;
+    text-align: center;
+  }
+  .btn-primary { background: var(--accent); color: #111; }
+  .btn-primary:active { background: var(--accent2); }
+  .btn-secondary {
+    background: var(--surface2);
+    color: var(--text);
+    border: 1px solid var(--border);
+  }
+  .btn-secondary:active { background: var(--surface3); }
+  .btn-danger {
+    background: transparent;
+    color: var(--red);
+    border: 1px solid var(--red);
+    font-size: 12px;
+    padding: 8px 14px;
+    width: auto;
+    display: inline-block;
+  }
+  .btn-row { display: flex; gap: 10px; }
+  .btn-row .btn { flex: 1; }
+
+  .invoice-list { margin-top: 8px; }
+  .invoice-item {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-left: 3px solid var(--accent2);
+    border-radius: 3px;
+    padding: 11px 13px;
+    margin-bottom: 8px;
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 10px;
+  }
+  .invoice-item.paid { border-left-color: var(--green); }
+  .inv-left { flex: 1; min-width: 0; }
+  .inv-desc {
+    font-weight: 600;
+    font-size: 15px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    margin-bottom: 4px;
+  }
+  .inv-meta {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    color: var(--muted);
+    line-height: 1.4;
+  }
+  .inv-right { text-align: right; flex-shrink: 0; }
+  .inv-profit {
+    font-family: var(--font-mono);
+    font-size: 13px;
+    color: var(--text);
+  }
+  .inv-setaside {
+    font-family: var(--font-mono);
+    font-size: 12px;
+    color: var(--accent);
+    margin-bottom: 4px;
+  }
+
+  .pill-row { display: flex; gap: 8px; margin-bottom: 14px; flex-wrap: wrap; }
+  .pill {
+    padding: 7px 14px;
+    border-radius: 2px;
+    border: 1px solid var(--border);
+    background: var(--surface2);
+    color: var(--muted);
+    font-family: var(--font-display);
+    font-size: 13px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+  .pill.active {
+    background: var(--accent);
+    color: #111;
+    border-color: var(--accent);
+  }
+
+  .rate-section {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 14px;
+    margin-bottom: 16px;
+  }
+  .rate-row {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    margin-top: 10px;
+  }
+  .rate-display {
+    font-family: var(--font-mono);
+    font-size: 32px;
+    color: var(--accent);
+    font-weight: 500;
+    min-width: 80px;
+  }
+  input[type="range"] {
+    flex: 1;
+    -webkit-appearance: none;
+    height: 4px;
+    background: var(--border);
+    border-radius: 2px;
+    outline: none;
+    padding: 0;
+  }
+  input[type="range"]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 24px; height: 24px;
+    border-radius: 50%;
+    background: var(--accent);
+    cursor: pointer;
+  }
+  input[type="range"]::-moz-range-thumb {
+    width: 24px; height: 24px;
+    border-radius: 50%;
+    background: var(--accent);
+    cursor: pointer;
+    border: none;
+  }
+
+  .breakdown {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    overflow: hidden;
+    margin-bottom: 16px;
+  }
+  .breakdown-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 11px 14px;
+    border-bottom: 1px solid var(--border);
+    font-size: 14px;
+    gap: 12px;
+  }
+  .breakdown-row:last-child { border-bottom: none; }
+  .breakdown-row.total { background: var(--surface2); font-weight: 600; }
+  .breakdown-row.positive .bd-val { color: var(--green); }
+  .breakdown-row.highlight-row { background: rgba(240,165,0,0.08); }
+  .bd-label {
+    color: var(--muted);
+    font-family: var(--font-display);
+    font-size: 13px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    flex: 1;
+  }
+  .bd-label small {
+    display: block;
+    font-size: 10px;
+    color: var(--muted);
+    opacity: 0.7;
+    font-weight: 500;
+    letter-spacing: 0.02em;
+    text-transform: none;
+    margin-top: 1px;
+  }
+  .bd-val {
+    font-family: var(--font-mono);
+    font-size: 14px;
+    color: var(--text);
+    white-space: nowrap;
+  }
+
+  .info-box {
+    background: rgba(240,165,0,0.06);
+    border: 1px solid rgba(240,165,0,0.25);
+    border-radius: 4px;
+    padding: 12px 14px;
+    font-size: 13px;
+    color: var(--muted);
+    line-height: 1.55;
+    margin-bottom: 14px;
+  }
+  .info-box.warning {
+    background: rgba(224,92,92,0.08);
+    border-color: rgba(224,92,92,0.3);
+  }
+  .info-box strong { color: var(--accent); }
+  .info-box.warning strong { color: var(--red); }
+
+  .empty {
+    text-align: center;
+    padding: 36px 20px;
+    color: var(--muted);
+    font-family: var(--font-display);
+    font-size: 14px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+  }
+
+  .divider { height: 1px; background: var(--border); margin: 18px 0; }
+
+  .modal-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.75);
+    z-index: 200;
+    align-items: flex-end;
+    justify-content: center;
+  }
+  .modal-overlay.open { display: flex; }
+  .modal {
+    background: var(--surface);
+    border-top: 2px solid var(--accent);
+    border-radius: 8px 8px 0 0;
+    padding: 20px;
+    width: 100%;
+    max-width: 600px;
+    max-height: 90vh;
+    overflow-y: auto;
+  }
+  .modal-title {
+    font-family: var(--font-display);
+    font-size: 20px;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    margin-bottom: 14px;
+  }
+
+  .toast {
+    position: fixed;
+    bottom: 24px;
+    left: 50%;
+    transform: translateX(-50%) translateY(100px);
+    background: var(--surface);
+    border: 1px solid var(--green);
+    color: var(--green);
+    padding: 11px 18px;
+    border-radius: 4px;
+    font-family: var(--font-display);
+    font-size: 13px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    z-index: 300;
+    transition: transform 0.3s ease, opacity 0.3s ease;
+    opacity: 0;
+    box-shadow: 0 6px 20px rgba(0,0,0,0.5);
+  }
+  .toast.show {
+    transform: translateX(-50%) translateY(0);
+    opacity: 1;
+  }
+  .toast.error { border-color: var(--red); color: var(--red); }
+
+  .field-hint {
+    color: var(--muted);
+    font-size: 11px;
+    margin-top: 4px;
+    font-style: italic;
+  }
+
+  .storage-status {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 12px 14px;
+    margin-bottom: 14px;
+    font-family: var(--font-mono);
+    font-size: 12px;
+    color: var(--muted);
+    line-height: 1.5;
+  }
+  .storage-status .row {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 4px;
+  }
+  .storage-status .row:last-child { margin-bottom: 0; }
+  .storage-status .ok { color: var(--green); }
+  .storage-status .warn { color: var(--accent); }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="brand">
+    <h1>⚒ Tax Tracker</h1>
+    <span class="subtitle">QLD Sole Trader</span>
+  </div>
+  <div class="save-status" id="save-status">●</div>
+</header>
+
+<nav>
+  <button class="active" data-page="dashboard">Dashboard</button>
+  <button data-page="add">+ Invoice</button>
+  <button data-page="invoices">History</button>
+  <button data-page="estimate">Tax Est.</button>
+  <button data-page="settings">Settings</button>
+</nav>
+
+<!-- ── DASHBOARD ──────────────────────────────────── -->
+<section id="page-dashboard" class="page active">
+  <div class="set-aside-box" id="dash-setaside-box">
+    <div class="set-aside-label">Total to set aside</div>
+    <div class="set-aside-amount" id="dash-setaside">$0.00</div>
+    <div class="set-aside-sub">Based on <span id="dash-rate">27</span>% of profit · <span id="dash-rate-mode">auto</span></div>
+  </div>
+  <div class="summary-grid">
+    <div class="summary-card">
+      <div class="card-label">Gross Invoiced</div>
+      <div class="card-value highlight" id="dash-gross">$0.00</div>
+    </div>
+    <div class="summary-card green">
+      <div class="card-label">Total Profit</div>
+      <div class="card-value green-val" id="dash-profit">$0.00</div>
+    </div>
+    <div class="summary-card orange">
+      <div class="card-label">Materials</div>
+      <div class="card-value" id="dash-materials">$0.00</div>
+    </div>
+    <div class="summary-card muted">
+      <div class="card-label">Invoices Logged</div>
+      <div class="card-value" id="dash-count">0</div>
+    </div>
+  </div>
+  <div class="info-box warning" id="gst-warning" style="display:none">
+    <strong>⚠ GST Threshold:</strong> Your turnover is approaching or has passed $75,000. You may need to register for GST. Confirm with a registered tax agent.
+  </div>
+  <div class="section-header">Recent Jobs</div>
+  <div id="dash-recent"></div>
+</section>
+
+<!-- ── ADD INVOICE ────────────────────────────────── -->
+<section id="page-add" class="page">
+  <div class="section-header">Log an Invoice</div>
+  <div class="form-group">
+    <label for="inv-desc">Job Description</label>
+    <input type="text" id="inv-desc" placeholder="e.g. Fix fence at Smith St" autocomplete="off">
+  </div>
+  <div class="row2">
+    <div class="form-group">
+      <label for="inv-total">Invoice Total ($)</label>
+      <input type="number" id="inv-total" placeholder="0.00" step="0.01" min="0" inputmode="decimal">
+    </div>
+    <div class="form-group">
+      <label for="inv-materials">Materials ($)</label>
+      <input type="number" id="inv-materials" placeholder="0.00" step="0.01" min="0" inputmode="decimal">
+    </div>
+  </div>
+  <div class="form-group">
+    <label for="inv-date">Date</label>
+    <input type="date" id="inv-date">
+  </div>
+  <div class="form-group">
+    <label>Status</label>
+    <div class="pill-row">
+      <div class="pill active" data-paid="false">Unpaid</div>
+      <div class="pill" data-paid="true">Paid</div>
+    </div>
+  </div>
+  <div id="inv-preview" style="display:none; margin-bottom:14px;">
+    <div class="breakdown">
+      <div class="breakdown-row">
+        <span class="bd-label">Invoice Total</span>
+        <span class="bd-val" id="prev-total">$0</span>
+      </div>
+      <div class="breakdown-row">
+        <span class="bd-label">Materials</span>
+        <span class="bd-val" id="prev-materials">−$0</span>
+      </div>
+      <div class="breakdown-row">
+        <span class="bd-label">Taxable Profit</span>
+        <span class="bd-val" id="prev-profit">$0</span>
+      </div>
+      <div class="breakdown-row total highlight-row">
+        <span class="bd-label">Set Aside</span>
+        <span class="bd-val" id="prev-setaside" style="color:var(--accent)">$0</span>
+      </div>
+    </div>
+  </div>
+  <button class="btn btn-primary" id="btn-add-invoice">Add Invoice</button>
+</section>
+
+<!-- ── HISTORY ────────────────────────────────────── -->
+<section id="page-invoices" class="page">
+  <div class="section-header">Invoice History <span class="badge" id="hist-count">0</span></div>
+  <div class="pill-row">
+    <div class="pill active" data-filter="all">All</div>
+    <div class="pill" data-filter="paid">Paid</div>
+    <div class="pill" data-filter="unpaid">Unpaid</div>
+  </div>
+  <div id="invoice-list"></div>
+</section>
+
+<!-- ── TAX ESTIMATE ───────────────────────────────── -->
+<section id="page-estimate" class="page">
+  <div class="section-header">FY Tax Estimate</div>
+  <div class="info-box">
+    <strong>Note:</strong> Rough guide only. Uses ATO resident individual rates + 2% Medicare levy. Not financial advice — verify with a registered tax agent.
+  </div>
+
+  <div class="section-header">Employment Income (PAYG)</div>
+  <div class="row2">
+    <div class="form-group">
+      <label for="payg-income">Salary / Wages ($)</label>
+      <input type="number" id="payg-income" placeholder="0" inputmode="decimal" data-persist>
+    </div>
+    <div class="form-group">
+      <label for="payg-withheld">Tax Withheld ($)</label>
+      <input type="number" id="payg-withheld" placeholder="0" inputmode="decimal" data-persist>
+    </div>
+  </div>
+  <div class="form-group">
+    <label for="payg-extra">Voluntary Extra Tax Paid ($)</label>
+    <input type="number" id="payg-extra" placeholder="0" inputmode="decimal" data-persist>
+    <div class="field-hint">Any extra tax you paid on top of normal withholding</div>
+  </div>
+
+  <div class="divider"></div>
+  <div class="section-header">Historical Business Totals</div>
+  <div class="info-box">
+    Enter totals from <strong>before</strong> you started logging invoices here (from your account statements or records). These are <strong>added to</strong> your logged invoices below for the estimate.
+  </div>
+  <div class="row2">
+    <div class="form-group">
+      <label for="ytd-gross">Past Invoiced ($)</label>
+      <input type="number" id="ytd-gross" placeholder="0" inputmode="decimal" data-persist>
+    </div>
+    <div class="form-group">
+      <label for="ytd-materials">Past Materials ($)</label>
+      <input type="number" id="ytd-materials" placeholder="0" inputmode="decimal" data-persist>
+    </div>
+  </div>
+
+  <div class="divider"></div>
+  <div class="section-header">Additional Deductions</div>
+  <div class="info-box">
+    Other business deductions not in materials above (tools, vehicle, insurance, phone, etc.)
+  </div>
+  <div class="form-group">
+    <label for="other-deductions">Other Deductions ($)</label>
+    <input type="number" id="other-deductions" placeholder="0" inputmode="decimal" data-persist>
+  </div>
+
+  <div class="divider"></div>
+  <div class="section-header">Estimate</div>
+  <div class="breakdown" id="estimate-breakdown"></div>
+  <div class="set-aside-box" id="est-result-box" style="margin-top:14px">
+    <div class="set-aside-label" id="est-result-label">Estimated tax still owed</div>
+    <div class="set-aside-amount" id="est-still-owed">$0.00</div>
+    <div class="set-aside-sub" id="est-sub">After withholding credits</div>
+  </div>
+</section>
+
+<!-- ── SETTINGS ───────────────────────────────────── -->
+<section id="page-settings" class="page">
+
+  <div class="section-header">Storage Status</div>
+  <div class="storage-status" id="storage-status">
+    <div class="row"><span>Database:</span><span id="ss-db">…</span></div>
+    <div class="row"><span>Invoices:</span><span id="ss-inv">…</span></div>
+    <div class="row"><span>Last Saved:</span><span id="ss-saved">…</span></div>
+  </div>
+
+  <div class="section-header">Tax Rate</div>
+  <div class="rate-section">
+    <div class="pill-row">
+      <div class="pill active" data-rate-mode="auto">Auto Estimate</div>
+      <div class="pill" data-rate-mode="manual">Manual</div>
+    </div>
+    <div id="auto-rate-info" class="info-box" style="margin-bottom:0">
+      <strong>Auto mode</strong> estimates marginal rate based on projected annual profit. Updates as invoices are added.
+    </div>
+    <div id="manual-rate-control" style="display:none">
+      <label>Set Your Rate</label>
+      <div class="rate-row">
+        <div class="rate-display" id="manual-rate-val">27%</div>
+        <input type="range" id="rate-slider" min="10" max="47" value="27">
+      </div>
+      <div class="field-hint">Common range: 21–32% for most sole traders</div>
+    </div>
+  </div>
+
+  <div class="section-header">Financial Year</div>
+  <div class="form-group">
+    <label for="fy-select">Tax Year</label>
+    <select id="fy-select">
+      <option value="2025">FY2024–25</option>
+      <option value="2026" selected>FY2025–26</option>
+    </select>
+  </div>
+
+  <div class="divider"></div>
+  <div class="section-header">Backup &amp; Restore</div>
+  <div class="info-box">
+    <strong>Save Backup</strong> downloads a complete snapshot (invoices + all form data) as a JSON file. <strong>Load Backup</strong> restores everything from a saved file.
+  </div>
+  <div class="btn-row" style="margin-bottom:8px">
+    <button class="btn btn-primary" id="btn-export" style="font-size:14px; padding:12px">⬇ Save Backup</button>
+    <button class="btn btn-secondary" id="btn-import" style="font-size:14px; padding:12px">⬆ Load Backup</button>
+  </div>
+  <input type="file" id="import-file" accept=".json,application/json" style="display:none">
+
+  <div class="divider"></div>
+  <div class="section-header">Danger Zone</div>
+  <button class="btn btn-danger" id="btn-clear">Clear All Data</button>
+  <div class="field-hint" style="margin-top:8px;">Deletes all invoices and resets settings on this device.</div>
+</section>
+
+<!-- ── MODAL ──────────────────────────────────────── -->
+<div class="modal-overlay" id="delete-modal">
+  <div class="modal">
+    <div class="modal-title">Remove Invoice?</div>
+    <p style="color:var(--muted); font-size:14px; margin-bottom:18px;">This will permanently remove this invoice from your records.</p>
+    <div class="btn-row">
+      <button class="btn btn-secondary" id="btn-cancel-delete">Cancel</button>
+      <button class="btn btn-primary" id="btn-confirm-delete" style="background:var(--red); color:#fff">Remove</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+'use strict';
+
+// ════════════════════════════════════════════════════
+//  STORAGE LAYER — IndexedDB primary, localStorage backup
+// ════════════════════════════════════════════════════
+const DB_NAME = 'TradieTaxTracker';
+const DB_VERSION = 1;
+const STORE = 'data';
+const KEY_INVOICES = 'invoices';
+const KEY_SETTINGS = 'settings';
+const KEY_FORM = 'formState';
+
+const Storage = {
+  db: null,
+  available: false,
+
+  async init() {
+    try {
+      this.db = await new Promise((resolve, reject) => {
+        const req = indexedDB.open(DB_NAME, DB_VERSION);
+        req.onupgradeneeded = e => {
+          const db = e.target.result;
+          if (!db.objectStoreNames.contains(STORE)) {
+            db.createObjectStore(STORE, { keyPath: 'key' });
+          }
+        };
+        req.onsuccess = e => resolve(e.target.result);
+        req.onerror = e => reject(e.target.error);
+        req.onblocked = () => reject(new Error('blocked'));
+      });
+      this.available = true;
+      return true;
+    } catch (err) {
+      console.warn('IndexedDB unavailable, falling back to localStorage', err);
+      this.available = false;
+      return false;
+    }
+  },
+
+  async get(key) {
+    if (this.available && this.db) {
+      try {
+        const val = await new Promise((resolve, reject) => {
+          const tx = this.db.transaction(STORE, 'readonly');
+          const req = tx.objectStore(STORE).get(key);
+          req.onsuccess = () => resolve(req.result ? req.result.value : null);
+          req.onerror = () => reject(req.error);
+        });
+        if (val != null) return val;
+      } catch {}
+    }
+    return this._lsGet(key);
+  },
+
+  async set(key, value) {
+    // always mirror to localStorage as a safety net
+    this._lsSet(key, value);
+    if (this.available && this.db) {
+      try {
+        await new Promise((resolve, reject) => {
+          const tx = this.db.transaction(STORE, 'readwrite');
+          const req = tx.objectStore(STORE).put({ key, value });
+          req.onsuccess = () => resolve();
+          req.onerror = () => reject(req.error);
+        });
+      } catch (err) {
+        console.warn('IDB write failed', err);
+      }
+    }
+  },
+
+  _lsGet(key) {
+    try {
+      const raw = localStorage.getItem('ttt_' + key);
+      return raw ? JSON.parse(raw) : null;
+    } catch { return null; }
+  },
+
+  _lsSet(key, value) {
+    try { localStorage.setItem('ttt_' + key, JSON.stringify(value)); return true; }
+    catch { return false; }
+  },
+
+  async clear() {
+    ['invoices', 'settings', 'formState'].forEach(k => {
+      try { localStorage.removeItem('ttt_' + k); } catch {}
+    });
+    if (this.available && this.db) {
+      try {
+        await new Promise((resolve) => {
+          const tx = this.db.transaction(STORE, 'readwrite');
+          tx.objectStore(STORE).clear();
+          tx.oncomplete = () => resolve();
+          tx.onerror = () => resolve();
+        });
+      } catch {}
+    }
+  }
+};
+
+// ════════════════════════════════════════════════════
+//  STATE — single source of truth
+// ════════════════════════════════════════════════════
+const State = {
+  invoices: [],
+  settings: { rateMode: 'auto', manualRate: 27, fy: '2026' },
+  formState: {
+    'payg-income': '',
+    'payg-withheld': '',
+    'payg-extra': '',
+    'ytd-gross': '',
+    'ytd-materials': '',
+    'other-deductions': ''
+  },
+  ui: { invPaid: false, filterMode: 'all', deleteId: null, lastSaved: null },
+
+  async load() {
+    const inv = await Storage.get(KEY_INVOICES);
+    const set = await Storage.get(KEY_SETTINGS);
+    const form = await Storage.get(KEY_FORM);
+    if (Array.isArray(inv)) this.invoices = inv;
+    if (set && typeof set === 'object') this.settings = { ...this.settings, ...set };
+    if (form && typeof form === 'object') this.formState = { ...this.formState, ...form };
+  },
+
+  async saveInvoices() {
+    await Storage.set(KEY_INVOICES, this.invoices);
+    this._markSaved();
+  },
+  async saveSettings() {
+    await Storage.set(KEY_SETTINGS, this.settings);
+    this._markSaved();
+  },
+  async saveFormState() {
+    await Storage.set(KEY_FORM, this.formState);
+    this._markSaved();
+  },
+  async saveAll() {
+    await Promise.all([
+      Storage.set(KEY_INVOICES, this.invoices),
+      Storage.set(KEY_SETTINGS, this.settings),
+      Storage.set(KEY_FORM, this.formState)
+    ]);
+    this._markSaved();
+  },
+
+  _markSaved() {
+    this.ui.lastSaved = Date.now();
+    UI.flashSaveIndicator();
+  }
+};
+
+// ════════════════════════════════════════════════════
+//  CALCULATION ENGINE
+// ════════════════════════════════════════════════════
+const Calc = {
+  fmt(n) {
+    const abs = Math.abs(n);
+    return '$' + abs.toLocaleString('en-AU', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  },
+
+  invoiceProfit(inv) { return inv.total - inv.materials; },
+  invoiceSetAside(inv) { return this.invoiceProfit(inv) * this.currentRate(); },
+
+  totals() {
+    const gross = State.invoices.reduce((s, i) => s + i.total, 0);
+    const materials = State.invoices.reduce((s, i) => s + i.materials, 0);
+    return {
+      gross,
+      materials,
+      profit: gross - materials,
+      setAside: State.invoices.reduce((s, i) => s + this.invoiceSetAside(i), 0),
+      count: State.invoices.length
+    };
+  },
+
+  currentRate() {
+    if (State.settings.rateMode === 'manual') return State.settings.manualRate / 100;
+    return this.estimateMarginalRate(this.projectAnnualProfit()) / 100;
+  },
+
+  projectAnnualProfit() {
+    if (State.invoices.length === 0) return 0;
+    const totalProfit = State.invoices.reduce((s, i) => s + this.invoiceProfit(i), 0);
+    const sorted = [...State.invoices].sort((a, b) => new Date(a.date) - new Date(b.date));
+    const first = new Date(sorted[0].date);
+    const last = new Date(sorted[sorted.length - 1].date);
+    const daySpan = Math.max(1, (last - first) / 86400000);
+    if (daySpan < 7) return totalProfit;
+    return (totalProfit / daySpan) * 365;
+  },
+
+  // 2024-25 marginal rates (incl. 2% medicare)
+  estimateMarginalRate(income) {
+    if (income <= 18200) return 2;
+    if (income <= 45000) return 21;
+    if (income <= 120000) return 34.5;
+    if (income <= 180000) return 39;
+    return 47;
+  },
+
+  // 2024-25 ATO resident individual tax brackets
+  calcTaxOwed(income) {
+    let tax = 0;
+    if (income <= 18200) tax = 0;
+    else if (income <= 45000) tax = (income - 18200) * 0.19;
+    else if (income <= 120000) tax = 5092 + (income - 45000) * 0.325;
+    else if (income <= 180000) tax = 29467 + (income - 120000) * 0.37;
+    else tax = 51667 + (income - 180000) * 0.45;
+    const medicare = income > 26000 ? income * 0.02 : 0;
+    return tax + medicare;
+  },
+
+  estimate() {
+    const f = State.formState;
+    const num = (k) => parseFloat(f[k]) || 0;
+    const paygIncome = num('payg-income');
+    const withheld = num('payg-withheld');
+    const extraPaid = num('payg-extra');
+    const otherDeductions = num('other-deductions');
+
+    const pastGross = num('ytd-gross');
+    const pastMaterials = num('ytd-materials');
+    const hasPast = pastGross > 0 || pastMaterials > 0;
+
+    const t = this.totals();
+    const bizGross = t.gross + pastGross;
+    const bizMaterials = t.materials + pastMaterials;
+    const bizProfit = Math.max(0, bizGross - bizMaterials - otherDeductions);
+    const totalIncome = paygIncome + bizProfit;
+    const taxOwed = this.calcTaxOwed(totalIncome);
+    const totalCredits = withheld + extraPaid;
+    const stillOwed = Math.max(0, taxOwed - totalCredits);
+    const refund = Math.max(0, totalCredits - taxOwed);
+
+    return {
+      paygIncome, withheld, extraPaid, otherDeductions,
+      pastGross, pastMaterials, hasPast,
+      loggedGross: t.gross, loggedMaterials: t.materials,
+      bizGross, bizMaterials, bizProfit,
+      totalIncome, taxOwed, totalCredits, stillOwed, refund,
+      invCount: t.count
+    };
+  }
+};
+
+// ════════════════════════════════════════════════════
+//  UI LAYER
+// ════════════════════════════════════════════════════
+const UI = {
+  _saveTimer: null,
+  _saveFlashTimer: null,
+  _toastTimer: null,
+
+  init() {
+    document.querySelectorAll('nav button').forEach(btn => {
+      btn.addEventListener('click', () => this.showPage(btn.dataset.page));
+    });
+
+    document.getElementById('btn-add-invoice').addEventListener('click', () => this.addInvoice());
+    document.getElementById('inv-total').addEventListener('input', () => this.previewInvoice());
+    document.getElementById('inv-materials').addEventListener('input', () => this.previewInvoice());
+    document.querySelectorAll('[data-paid]').forEach(p => {
+      p.addEventListener('click', () => this.setPaid(p.dataset.paid === 'true'));
+    });
+
+    document.querySelectorAll('[data-filter]').forEach(p => {
+      p.addEventListener('click', () => this.filterInvoices(p.dataset.filter));
+    });
+
+    document.querySelectorAll('[data-rate-mode]').forEach(p => {
+      p.addEventListener('click', () => this.setRateMode(p.dataset.rateMode));
+    });
+    document.getElementById('rate-slider').addEventListener('input', e => {
+      State.settings.manualRate = parseInt(e.target.value);
+      document.getElementById('manual-rate-val').textContent = e.target.value + '%';
+      State.saveSettings();
+      this.refreshAll();
+    });
+    document.getElementById('fy-select').addEventListener('change', e => {
+      State.settings.fy = e.target.value;
+      State.saveSettings();
+    });
+
+    // persistent form fields on Tax Estimate page
+    document.querySelectorAll('[data-persist]').forEach(input => {
+      input.value = State.formState[input.id] ?? '';
+      input.addEventListener('input', () => {
+        State.formState[input.id] = input.value;
+        this._scheduleFormSave();
+        this.renderEstimate();
+      });
+    });
+
+    document.getElementById('btn-export').addEventListener('click', () => this.exportData());
+    document.getElementById('btn-import').addEventListener('click', () => document.getElementById('import-file').click());
+    document.getElementById('import-file').addEventListener('change', e => this.importData(e));
+    document.getElementById('btn-clear').addEventListener('click', () => this.clearData());
+
+    document.getElementById('btn-cancel-delete').addEventListener('click', () => this.closeDeleteModal());
+    document.getElementById('btn-confirm-delete').addEventListener('click', () => this.confirmDelete());
+
+    // restore settings UI
+    document.getElementById('rate-slider').value = State.settings.manualRate;
+    document.getElementById('manual-rate-val').textContent = State.settings.manualRate + '%';
+    document.getElementById('fy-select').value = State.settings.fy;
+    this._applyRateModeUI(State.settings.rateMode);
+
+    document.getElementById('inv-date').value = new Date().toISOString().split('T')[0];
+  },
+
+  _scheduleFormSave() {
+    clearTimeout(this._saveTimer);
+    this._saveTimer = setTimeout(() => State.saveFormState(), 300);
+  },
+
+  showPage(id) {
+    document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+    document.querySelectorAll('nav button').forEach(b => b.classList.remove('active'));
+    document.getElementById('page-' + id).classList.add('active');
+    document.querySelector(`nav button[data-page="${id}"]`).classList.add('active');
+    window.scrollTo(0, 0);
+    if (id === 'estimate') this.renderEstimate();
+    if (id === 'dashboard') this.renderDashboard();
+    if (id === 'invoices') this.renderInvoiceList();
+    if (id === 'settings') this.renderStorageStatus();
+  },
+
+  setPaid(val) {
+    State.ui.invPaid = val;
+    document.querySelectorAll('[data-paid]').forEach(p => {
+      p.classList.toggle('active', (p.dataset.paid === 'true') === val);
+    });
+  },
+
+  previewInvoice() {
+    const total = parseFloat(document.getElementById('inv-total').value) || 0;
+    const mats = parseFloat(document.getElementById('inv-materials').value) || 0;
+    const preview = document.getElementById('inv-preview');
+    if (total <= 0) { preview.style.display = 'none'; return; }
+    const profit = total - mats;
+    const setAside = profit * Calc.currentRate();
+    preview.style.display = 'block';
+    document.getElementById('prev-total').textContent = Calc.fmt(total);
+    document.getElementById('prev-materials').textContent = '−' + Calc.fmt(mats);
+    document.getElementById('prev-profit').textContent = Calc.fmt(profit);
+    document.getElementById('prev-setaside').textContent = Calc.fmt(setAside);
+  },
+
+  async addInvoice() {
+    const desc = document.getElementById('inv-desc').value.trim();
+    const total = parseFloat(document.getElementById('inv-total').value);
+    const mats = parseFloat(document.getElementById('inv-materials').value) || 0;
+    const date = document.getElementById('inv-date').value;
+    if (!desc) return this.toast('Add a job description', true);
+    if (!total || total <= 0) return this.toast('Enter a valid invoice total', true);
+    if (!date) return this.toast('Select a date', true);
+    State.invoices.push({
+      id: Date.now() + Math.random(),
+      desc, total, materials: mats, date, paid: State.ui.invPaid
+    });
+    State.invoices.sort((a, b) => new Date(b.date) - new Date(a.date));
+    await State.saveInvoices();
+    document.getElementById('inv-desc').value = '';
+    document.getElementById('inv-total').value = '';
+    document.getElementById('inv-materials').value = '';
+    document.getElementById('inv-preview').style.display = 'none';
+    document.getElementById('inv-date').value = new Date().toISOString().split('T')[0];
+    this.setPaid(false);
+    this.refreshAll();
+    this.toast('Invoice added');
+    this.showPage('dashboard');
+  },
+
+  refreshAll() {
+    this.renderDashboard();
+    this.renderInvoiceList();
+    this.renderEstimate();
+  },
+
+  renderDashboard() {
+    const t = Calc.totals();
+    const pastGross = parseFloat(State.formState['ytd-gross']) || 0;
+    const pastMaterials = parseFloat(State.formState['ytd-materials']) || 0;
+    const hasPast = pastGross > 0 || pastMaterials > 0;
+    const rate = Calc.currentRate();
+    const ratePct = Math.round(rate * 100);
+
+    const totalGross = t.gross + pastGross;
+    const totalMaterials = t.materials + pastMaterials;
+    const totalProfit = totalGross - totalMaterials;
+    const totalSetAside = totalProfit * rate;
+
+    document.getElementById('dash-gross').textContent = Calc.fmt(totalGross);
+    document.getElementById('dash-profit').textContent = Calc.fmt(totalProfit);
+    document.getElementById('dash-materials').textContent = Calc.fmt(totalMaterials);
+    document.getElementById('dash-count').textContent = t.count;
+    document.getElementById('dash-setaside').textContent = Calc.fmt(totalSetAside);
+    document.getElementById('dash-rate').textContent = ratePct;
+    document.getElementById('dash-rate-mode').textContent = State.settings.rateMode +
+      (hasPast ? ' · includes past totals' : '');
+    document.getElementById('gst-warning').style.display = totalGross >= 65000 ? 'block' : 'none';
+
+    const recent = State.invoices.slice(0, 3);
+    const recentEl = document.getElementById('dash-recent');
+    if (recent.length === 0) {
+      recentEl.innerHTML = '<div class="empty">No invoices yet — tap + Invoice</div>';
+    } else {
+      recentEl.innerHTML = recent.map(inv => this.invoiceHTML(inv)).join('');
+    }
+  },
+
+  filterInvoices(mode) {
+    State.ui.filterMode = mode;
+    document.querySelectorAll('[data-filter]').forEach(p => {
+      p.classList.toggle('active', p.dataset.filter === mode);
+    });
+    this.renderInvoiceList();
+  },
+
+  renderInvoiceList() {
+    document.getElementById('hist-count').textContent = State.invoices.length;
+    const filtered = State.invoices.filter(inv => {
+      if (State.ui.filterMode === 'paid') return inv.paid;
+      if (State.ui.filterMode === 'unpaid') return !inv.paid;
+      return true;
+    });
+    const el = document.getElementById('invoice-list');
+    if (filtered.length === 0) {
+      el.innerHTML = '<div class="empty">No invoices here</div>';
+      return;
+    }
+    el.innerHTML = filtered.map(inv => this.invoiceHTML(inv, true)).join('');
+    el.querySelectorAll('[data-delete-id]').forEach(btn => {
+      btn.addEventListener('click', () => this.openDeleteModal(parseFloat(btn.dataset.deleteId)));
+    });
+  },
+
+  invoiceHTML(inv, showDelete = false) {
+    const profit = Calc.invoiceProfit(inv);
+    const setaside = Calc.invoiceSetAside(inv);
+    const safeDesc = this.escape(inv.desc);
+    return `
+      <div class="invoice-item ${inv.paid ? 'paid' : ''}">
+        <div class="inv-left">
+          <div class="inv-desc">${safeDesc}</div>
+          <div class="inv-meta">${inv.date} · ${Calc.fmt(inv.total)} inv · ${Calc.fmt(inv.materials)} mat${inv.paid ? ' · ✓ PAID' : ''}</div>
+        </div>
+        <div class="inv-right">
+          <div class="inv-profit">${Calc.fmt(profit)} profit</div>
+          <div class="inv-setaside">→ ${Calc.fmt(setaside)}</div>
+          ${showDelete ? `<button class="btn btn-danger" data-delete-id="${inv.id}">Remove</button>` : ''}
+        </div>
+      </div>`;
+  },
+
+  escape(s) {
+    return String(s).replace(/[&<>"']/g, c => ({
+      '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;'
+    }[c]));
+  },
+
+  openDeleteModal(id) {
+    State.ui.deleteId = id;
+    document.getElementById('delete-modal').classList.add('open');
+  },
+
+  closeDeleteModal() {
+    document.getElementById('delete-modal').classList.remove('open');
+    State.ui.deleteId = null;
+  },
+
+  async confirmDelete() {
+    State.invoices = State.invoices.filter(i => i.id !== State.ui.deleteId);
+    await State.saveInvoices();
+    this.closeDeleteModal();
+    this.refreshAll();
+    this.toast('Invoice removed');
+  },
+
+  renderEstimate() {
+    const e = Calc.estimate();
+    const sourceLabel = e.hasPast
+      ? `${Calc.fmt(e.pastGross)} past + ${Calc.fmt(e.loggedGross)} from ${e.invCount} logged`
+      : `From ${e.invCount} logged invoice${e.invCount !== 1 ? 's' : ''}`;
+    const matsLabel = e.hasPast
+      ? `${Calc.fmt(e.pastMaterials)} past + ${Calc.fmt(e.loggedMaterials)} logged${e.otherDeductions > 0 ? ` + ${Calc.fmt(e.otherDeductions)} other` : ''}`
+      : (e.otherDeductions > 0 ? `${Calc.fmt(e.loggedMaterials)} materials + ${Calc.fmt(e.otherDeductions)} other` : 'From logged invoices');
+
+    document.getElementById('estimate-breakdown').innerHTML = `
+      <div class="breakdown-row">
+        <span class="bd-label">PAYG Wages</span>
+        <span class="bd-val">${Calc.fmt(e.paygIncome)}</span>
+      </div>
+      <div class="breakdown-row">
+        <span class="bd-label">Business Gross<small>${sourceLabel}</small></span>
+        <span class="bd-val">${Calc.fmt(e.bizGross)}</span>
+      </div>
+      <div class="breakdown-row">
+        <span class="bd-label">Materials &amp; Deductions<small>${matsLabel}</small></span>
+        <span class="bd-val">−${Calc.fmt(e.bizMaterials + e.otherDeductions)}</span>
+      </div>
+      <div class="breakdown-row">
+        <span class="bd-label">Business Profit</span>
+        <span class="bd-val">${Calc.fmt(e.bizProfit)}</span>
+      </div>
+      <div class="breakdown-row total">
+        <span class="bd-label">Total Taxable Income</span>
+        <span class="bd-val">${Calc.fmt(e.totalIncome)}</span>
+      </div>
+      <div class="breakdown-row">
+        <span class="bd-label">Estimated Tax + Medicare</span>
+        <span class="bd-val">${Calc.fmt(e.taxOwed)}</span>
+      </div>
+      <div class="breakdown-row positive">
+        <span class="bd-label">Credits (withheld + extra)</span>
+        <span class="bd-val">−${Calc.fmt(e.totalCredits)}</span>
+      </div>
+    `;
+
+    const box = document.getElementById('est-result-box');
+    const label = document.getElementById('est-result-label');
+    const amount = document.getElementById('est-still-owed');
+    const sub = document.getElementById('est-sub');
+    if (e.refund > 0) {
+      box.classList.add('green');
+      label.textContent = 'Estimated refund';
+      amount.textContent = Calc.fmt(e.refund);
+      sub.textContent = 'Credits exceed estimated tax';
+    } else {
+      box.classList.remove('green');
+      label.textContent = 'Estimated tax still owed';
+      amount.textContent = Calc.fmt(e.stillOwed);
+      sub.textContent = 'After withholding credits';
+    }
+  },
+
+  _applyRateModeUI(mode) {
+    document.querySelectorAll('[data-rate-mode]').forEach(p => {
+      p.classList.toggle('active', p.dataset.rateMode === mode);
+    });
+    document.getElementById('auto-rate-info').style.display = mode === 'auto' ? 'block' : 'none';
+    document.getElementById('manual-rate-control').style.display = mode === 'manual' ? 'block' : 'none';
+  },
+
+  async setRateMode(mode) {
+    State.settings.rateMode = mode;
+    this._applyRateModeUI(mode);
+    await State.saveSettings();
+    this.refreshAll();
+  },
+
+  renderStorageStatus() {
+    document.getElementById('ss-db').innerHTML = Storage.available
+      ? '<span class="ok">IndexedDB ✓</span>'
+      : '<span class="warn">localStorage (fallback)</span>';
+    document.getElementById('ss-inv').textContent = State.invoices.length;
+    document.getElementById('ss-saved').textContent = State.ui.lastSaved
+      ? new Date(State.ui.lastSaved).toLocaleString('en-AU')
+      : 'Never';
+  },
+
+  flashSaveIndicator() {
+    const el = document.getElementById('save-status');
+    el.classList.add('saved');
+    el.textContent = '● Saved';
+    clearTimeout(this._saveFlashTimer);
+    this._saveFlashTimer = setTimeout(() => {
+      el.classList.remove('saved');
+      el.textContent = '●';
+    }, 1500);
+  },
+
+  toast(msg, isError = false) {
+    const el = document.getElementById('toast');
+    el.textContent = msg;
+    el.classList.toggle('error', isError);
+    el.classList.add('show');
+    clearTimeout(this._toastTimer);
+    this._toastTimer = setTimeout(() => el.classList.remove('show'), 2200);
+  },
+
+  exportData() {
+    const data = {
+      version: 2,
+      exported: new Date().toISOString(),
+      invoices: State.invoices,
+      settings: State.settings,
+      formState: State.formState
+    };
+    const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `tradie-tax-backup-${new Date().toISOString().split('T')[0]}.json`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+    this.toast('Backup downloaded');
+  },
+
+  importData(event) {
+    const file = event.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = async e => {
+      try {
+        const data = JSON.parse(e.target.result);
+        if (!data || (!Array.isArray(data.invoices) && !data.settings)) {
+          throw new Error('Invalid backup file');
+        }
+        if (Array.isArray(data.invoices)) State.invoices = data.invoices;
+        if (data.settings) State.settings = { ...State.settings, ...data.settings };
+        if (data.formState) State.formState = { ...State.formState, ...data.formState };
+        await State.saveAll();
+
+        document.querySelectorAll('[data-persist]').forEach(input => {
+          input.value = State.formState[input.id] ?? '';
+        });
+        document.getElementById('rate-slider').value = State.settings.manualRate;
+        document.getElementById('manual-rate-val').textContent = State.settings.manualRate + '%';
+        document.getElementById('fy-select').value = State.settings.fy;
+        this._applyRateModeUI(State.settings.rateMode);
+
+        this.refreshAll();
+        this.renderStorageStatus();
+        this.toast(`Loaded ${State.invoices.length} invoices`);
+      } catch (err) {
+        console.error(err);
+        this.toast('Could not load that file', true);
+      }
+    };
+    reader.readAsText(file);
+    event.target.value = '';
+  },
+
+  async clearData() {
+    if (!confirm('Delete all invoices, form data, and reset settings? This cannot be undone.')) return;
+    await Storage.clear();
+    State.invoices = [];
+    State.settings = { rateMode: 'auto', manualRate: 27, fy: '2026' };
+    State.formState = {
+      'payg-income': '', 'payg-withheld': '', 'payg-extra': '',
+      'ytd-gross': '', 'ytd-materials': '', 'other-deductions': ''
+    };
+    document.querySelectorAll('[data-persist]').forEach(i => i.value = '');
+    document.getElementById('rate-slider').value = 27;
+    document.getElementById('manual-rate-val').textContent = '27%';
+    document.getElementById('fy-select').value = '2026';
+    this._applyRateModeUI('auto');
+    this.refreshAll();
+    this.renderStorageStatus();
+    this.toast('All data cleared');
+    this.showPage('dashboard');
+  }
+};
+
+// ════════════════════════════════════════════════════
+//  BOOT
+// ════════════════════════════════════════════════════
+(async function boot() {
+  await Storage.init();
+  await State.load();
+  UI.init();
+  UI.refreshAll();
+  UI.renderStorageStatus();
+})();
+
+// final safety net: synchronous localStorage flush on unload
+window.addEventListener('beforeunload', () => {
+  try {
+    localStorage.setItem('ttt_' + KEY_INVOICES, JSON.stringify(State.invoices));
+    localStorage.setItem('ttt_' + KEY_SETTINGS, JSON.stringify(State.settings));
+    localStorage.setItem('ttt_' + KEY_FORM, JSON.stringify(State.formState));
+  } catch {}
+});
+
+// Register service worker for offline support
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('sw.js').catch(err => console.warn('SW registration failed', err));
+  });
+}
+</script>
+</body>
+</html>

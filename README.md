@@ -1,2 +1,12 @@
-# Tradie-Tax
-A calculator to assist in preparing for how much tax to set aside for Aussie Tradies. 100% not financial advice, dyor or enlist help of qualified tax accountant. This is a guide only. 
+# Tradie Tax Tracker
+
+A QLD sole trader tax tracker built as a Progressive Web App.
+
+## Files
+- `index.html` — the app
+- `manifest.json` — PWA manifest (name, icons, colours)
+- `sw.js` — service worker for offline support
+- `icon-*.png` — app icons
+
+## Hosted at
+GitHub Pages — see Settings → Pages
