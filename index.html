@@ -7,11 +7,11 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="Tax Tracker">
 <meta name="theme-color" content="#111110">
+<title>Tradie Tax Tracker</title>
 <link rel="manifest" href="manifest.json">
 <link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
 <link rel="icon" type="image/png" sizes="512x512" href="icon-512.png">
 <link rel="apple-touch-icon" href="icon-192.png">
-<title>Tradie Tax Tracker</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Barlow+Condensed:wght@400;600;700;800&family=Barlow:wght@400;500;600&display=swap" rel="stylesheet">
@@ -26,6 +26,8 @@
     --accent: #f0a500;
     --accent2: #e05c00;
     --green: #4caf7d;
+    --blue: #5b8def;
+    --purple: #b288d9;
     --red: #e05c5c;
     --text: #e8e6df;
     --muted: #7a7870;
@@ -33,534 +35,593 @@
     --font-body: 'Barlow', sans-serif;
     --font-mono: 'DM Mono', monospace;
   }
-
   * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
-
   html, body {
-    background: var(--bg);
-    color: var(--text);
-    font-family: var(--font-body);
-    min-height: 100vh;
+    background: var(--bg); color: var(--text);
+    font-family: var(--font-body); min-height: 100vh;
     -webkit-font-smoothing: antialiased;
   }
-
   body { padding-bottom: 90px; overscroll-behavior: contain; }
 
+  /* ── HEADER ───────────────────────────────────── */
   header {
     background: var(--surface);
     border-bottom: 2px solid var(--accent);
-    padding: 14px 18px 12px;
-    position: sticky;
-    top: 0;
-    z-index: 100;
-    display: flex;
-    align-items: baseline;
-    justify-content: space-between;
-    gap: 12px;
+    padding: 12px 16px 11px;
+    position: sticky; top: 0; z-index: 100;
+    display: flex; align-items: center; justify-content: space-between; gap: 10px;
   }
-  .brand { display: flex; align-items: baseline; gap: 10px; }
+  .menu-btn {
+    background: none; border: none; color: var(--accent);
+    font-size: 22px; cursor: pointer; padding: 4px 8px; line-height: 1;
+  }
+  .brand { display: flex; align-items: baseline; gap: 8px; flex: 1; }
   header h1 {
-    font-family: var(--font-display);
-    font-size: 26px;
-    font-weight: 800;
-    letter-spacing: 0.04em;
-    text-transform: uppercase;
-    color: var(--accent);
-    line-height: 1;
+    font-family: var(--font-display); font-size: 22px; font-weight: 800;
+    letter-spacing: 0.04em; text-transform: uppercase; color: var(--accent); line-height: 1;
   }
   header .subtitle {
-    font-family: var(--font-display);
-    font-size: 12px;
-    font-weight: 600;
-    color: var(--muted);
-    text-transform: uppercase;
-    letter-spacing: 0.1em;
+    font-family: var(--font-display); font-size: 11px; font-weight: 600;
+    color: var(--muted); text-transform: uppercase; letter-spacing: 0.1em;
   }
   .save-status {
-    font-family: var(--font-mono);
-    font-size: 10px;
-    color: var(--muted);
+    font-family: var(--font-mono); font-size: 10px; color: var(--muted);
     transition: color 0.3s, opacity 0.4s;
   }
   .save-status.saved { color: var(--green); }
 
-  nav {
-    display: flex;
-    background: var(--surface);
+  /* ── DRAWER NAV ───────────────────────────────── */
+  .drawer-overlay {
+    display: none; position: fixed; inset: 0;
+    background: rgba(0,0,0,0.7); z-index: 200;
+  }
+  .drawer-overlay.open { display: block; }
+  .drawer {
+    position: fixed; left: -300px; top: 0; bottom: 0; width: 280px;
+    background: var(--surface); z-index: 201;
+    border-right: 2px solid var(--accent);
+    transition: left 0.25s ease; display: flex; flex-direction: column;
+    overflow-y: auto;
+  }
+  .drawer.open { left: 0; }
+  .drawer-header {
+    padding: 18px 20px;
     border-bottom: 1px solid var(--border);
-    overflow-x: auto;
-    scrollbar-width: none;
-    -webkit-overflow-scrolling: touch;
+    background: var(--surface2);
   }
-  nav::-webkit-scrollbar { display: none; }
-  nav button {
-    flex: 1;
-    min-width: 80px;
-    padding: 13px 8px;
-    background: none;
-    border: none;
-    border-bottom: 3px solid transparent;
-    color: var(--muted);
-    font-family: var(--font-display);
-    font-size: 13px;
-    font-weight: 700;
-    text-transform: uppercase;
-    letter-spacing: 0.08em;
-    cursor: pointer;
-    white-space: nowrap;
-    transition: all 0.15s;
+  .drawer-header h2 {
+    font-family: var(--font-display); font-size: 18px; font-weight: 800;
+    text-transform: uppercase; letter-spacing: 0.08em; color: var(--accent);
   }
-  nav button.active {
-    color: var(--accent);
-    border-bottom-color: var(--accent);
+  .drawer-header div {
+    color: var(--muted); font-size: 11px; margin-top: 2px;
+    font-family: var(--font-display); letter-spacing: 0.08em; text-transform: uppercase;
   }
+  .drawer-nav { padding: 8px 0; flex: 1; }
+  .drawer-nav button {
+    display: flex; align-items: center; width: 100%; padding: 13px 20px;
+    background: none; border: none; color: var(--text);
+    font-family: var(--font-display); font-size: 14px; font-weight: 700;
+    text-transform: uppercase; letter-spacing: 0.08em;
+    cursor: pointer; text-align: left; gap: 12px;
+    border-left: 3px solid transparent;
+  }
+  .drawer-nav button.active {
+    color: var(--accent); border-left-color: var(--accent);
+    background: rgba(240,165,0,0.05);
+  }
+  .drawer-nav .nav-icon { font-size: 16px; width: 22px; text-align: center; }
+  .drawer-nav .section-divider {
+    padding: 10px 20px 4px; color: var(--muted);
+    font-family: var(--font-display); font-size: 10px; font-weight: 700;
+    letter-spacing: 0.12em; text-transform: uppercase;
+  }
+  .drawer-nav .section-divider:first-child { padding-top: 4px; }
 
-  .page { display: none; padding: 18px; max-width: 600px; margin: 0 auto; }
+  /* ── PAGES ────────────────────────────────────── */
+  .page { display: none; padding: 16px; max-width: 700px; margin: 0 auto; }
   .page.active { display: block; }
 
+  /* ── CARDS & GRIDS ────────────────────────────── */
   .summary-grid {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 10px;
-    margin-bottom: 18px;
+    display: grid; grid-template-columns: 1fr 1fr;
+    gap: 10px; margin-bottom: 16px;
   }
   .summary-card {
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: 4px;
-    padding: 13px;
-    position: relative;
-    overflow: hidden;
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 4px; padding: 12px;
+    position: relative; overflow: hidden;
   }
   .summary-card::before {
-    content: '';
-    position: absolute;
-    top: 0; left: 0; right: 0;
-    height: 3px;
-    background: var(--accent);
+    content: ''; position: absolute; top: 0; left: 0; right: 0;
+    height: 3px; background: var(--accent);
   }
   .summary-card.green::before { background: var(--green); }
   .summary-card.orange::before { background: var(--accent2); }
+  .summary-card.blue::before { background: var(--blue); }
+  .summary-card.purple::before { background: var(--purple); }
   .summary-card.muted::before { background: var(--muted); }
+  .summary-card.red::before { background: var(--red); }
   .card-label {
-    font-family: var(--font-display);
-    font-size: 11px;
-    font-weight: 700;
-    text-transform: uppercase;
-    letter-spacing: 0.1em;
-    color: var(--muted);
-    margin-bottom: 6px;
+    font-family: var(--font-display); font-size: 10px; font-weight: 700;
+    text-transform: uppercase; letter-spacing: 0.1em;
+    color: var(--muted); margin-bottom: 5px;
   }
   .card-value {
-    font-family: var(--font-mono);
-    font-size: 21px;
-    font-weight: 500;
-    color: var(--text);
-    line-height: 1;
+    font-family: var(--font-mono); font-size: 19px; font-weight: 500;
+    color: var(--text); line-height: 1; word-break: break-all;
   }
   .card-value.highlight { color: var(--accent); }
   .card-value.green-val { color: var(--green); }
+  .card-value.red-val { color: var(--red); }
+  .card-sub {
+    font-size: 11px; color: var(--muted); margin-top: 4px;
+  }
 
+  /* ── BIG SET-ASIDE BOX ────────────────────────── */
   .set-aside-box {
-    background: var(--surface2);
-    border: 2px solid var(--accent);
-    border-radius: 4px;
-    padding: 20px 16px;
-    margin-bottom: 18px;
+    background: var(--surface2); border: 2px solid var(--accent);
+    border-radius: 4px; padding: 18px 14px; margin-bottom: 16px;
     text-align: center;
-    position: relative;
   }
   .set-aside-box.green { border-color: var(--green); }
+  .set-aside-box.red { border-color: var(--red); }
   .set-aside-label {
-    font-family: var(--font-display);
-    font-size: 13px;
-    font-weight: 700;
-    text-transform: uppercase;
-    letter-spacing: 0.12em;
-    color: var(--muted);
-    margin-bottom: 8px;
+    font-family: var(--font-display); font-size: 12px; font-weight: 700;
+    text-transform: uppercase; letter-spacing: 0.12em;
+    color: var(--muted); margin-bottom: 6px;
   }
   .set-aside-amount {
-    font-family: var(--font-mono);
-    font-size: 44px;
-    font-weight: 500;
-    color: var(--accent);
-    line-height: 1;
-    word-break: break-all;
+    font-family: var(--font-mono); font-size: 38px; font-weight: 500;
+    color: var(--accent); line-height: 1; word-break: break-all;
   }
   .set-aside-box.green .set-aside-amount { color: var(--green); }
-  .set-aside-sub {
-    font-size: 13px;
-    color: var(--muted);
-    margin-top: 8px;
+  .set-aside-box.red .set-aside-amount { color: var(--red); }
+  .set-aside-sub { font-size: 12px; color: var(--muted); margin-top: 7px; }
+  .set-aside-progress {
+    margin-top: 10px; height: 6px; background: var(--border);
+    border-radius: 3px; overflow: hidden;
+  }
+  .set-aside-progress-bar {
+    height: 100%; background: var(--green); transition: width 0.3s;
   }
 
+  /* ── SECTION HEADERS ──────────────────────────── */
   .section-header {
-    font-family: var(--font-display);
-    font-size: 15px;
-    font-weight: 800;
-    text-transform: uppercase;
-    letter-spacing: 0.1em;
-    color: var(--muted);
-    border-bottom: 1px solid var(--border);
-    padding-bottom: 8px;
-    margin-bottom: 14px;
-    margin-top: 4px;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
+    font-family: var(--font-display); font-size: 14px; font-weight: 800;
+    text-transform: uppercase; letter-spacing: 0.1em; color: var(--muted);
+    border-bottom: 1px solid var(--border); padding-bottom: 7px;
+    margin-bottom: 12px; margin-top: 4px;
+    display: flex; align-items: center; justify-content: space-between;
   }
   .section-header .badge {
-    font-size: 10px;
-    font-weight: 700;
-    color: var(--accent);
-    background: rgba(240,165,0,0.1);
-    padding: 2px 7px;
-    border-radius: 2px;
-    letter-spacing: 0.08em;
+    font-size: 10px; font-weight: 700; color: var(--accent);
+    background: rgba(240,165,0,0.1); padding: 2px 7px;
+    border-radius: 2px; letter-spacing: 0.08em;
   }
 
-  .form-group { margin-bottom: 12px; }
+  /* ── FORMS ────────────────────────────────────── */
+  .form-group { margin-bottom: 11px; }
   label {
-    display: block;
-    font-family: var(--font-display);
-    font-size: 12px;
-    font-weight: 700;
-    text-transform: uppercase;
-    letter-spacing: 0.08em;
-    color: var(--muted);
-    margin-bottom: 6px;
+    display: block; font-family: var(--font-display);
+    font-size: 11px; font-weight: 700; text-transform: uppercase;
+    letter-spacing: 0.08em; color: var(--muted); margin-bottom: 5px;
   }
-  input[type="text"], input[type="number"], input[type="date"], select, textarea {
-    width: 100%;
-    background: var(--surface2);
-    border: 1px solid var(--border);
-    border-radius: 3px;
-    padding: 12px 14px;
-    color: var(--text);
-    font-family: var(--font-mono);
-    font-size: 15px;
-    outline: none;
-    transition: border-color 0.15s;
-    -webkit-appearance: none;
-    appearance: none;
+  input[type="text"], input[type="number"], input[type="date"],
+  input[type="email"], input[type="tel"], select, textarea {
+    width: 100%; background: var(--surface2);
+    border: 1px solid var(--border); border-radius: 3px;
+    padding: 11px 13px; color: var(--text);
+    font-family: var(--font-mono); font-size: 15px;
+    outline: none; transition: border-color 0.15s;
+    -webkit-appearance: none; appearance: none;
   }
+  textarea { min-height: 80px; resize: vertical; font-family: var(--font-body); }
   input[type="date"] { font-family: var(--font-body); }
   input:focus, select:focus, textarea:focus { border-color: var(--accent); }
-  input::placeholder { color: var(--muted); opacity: 0.5; }
+  input::placeholder, textarea::placeholder { color: var(--muted); opacity: 0.5; }
   select {
     background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath fill='%237a7870' d='M6 8L0 0h12z'/%3E%3C/svg%3E");
-    background-repeat: no-repeat;
-    background-position: right 14px center;
-    padding-right: 36px;
+    background-repeat: no-repeat; background-position: right 12px center;
+    padding-right: 34px;
   }
-
   .row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .row3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; }
+  .field-hint {
+    color: var(--muted); font-size: 11px; margin-top: 4px;
+    font-style: italic;
+  }
+  .input-with-button {
+    display: flex; gap: 8px;
+  }
+  .input-with-button input { flex: 1; }
 
+  /* ── BUTTONS ──────────────────────────────────── */
   .btn {
-    display: block;
-    width: 100%;
-    padding: 14px;
-    border: none;
-    border-radius: 3px;
-    font-family: var(--font-display);
-    font-size: 16px;
-    font-weight: 800;
-    text-transform: uppercase;
-    letter-spacing: 0.1em;
-    cursor: pointer;
-    transition: all 0.15s;
-    text-align: center;
+    display: block; width: 100%; padding: 13px;
+    border: none; border-radius: 3px;
+    font-family: var(--font-display); font-size: 15px; font-weight: 800;
+    text-transform: uppercase; letter-spacing: 0.1em;
+    cursor: pointer; transition: all 0.15s; text-align: center;
   }
   .btn-primary { background: var(--accent); color: #111; }
   .btn-primary:active { background: var(--accent2); }
   .btn-secondary {
-    background: var(--surface2);
-    color: var(--text);
+    background: var(--surface2); color: var(--text);
     border: 1px solid var(--border);
   }
   .btn-secondary:active { background: var(--surface3); }
   .btn-danger {
-    background: transparent;
-    color: var(--red);
+    background: transparent; color: var(--red);
     border: 1px solid var(--red);
-    font-size: 12px;
-    padding: 8px 14px;
-    width: auto;
-    display: inline-block;
+    font-size: 11px; padding: 7px 12px;
+    width: auto; display: inline-block;
   }
   .btn-row { display: flex; gap: 10px; }
   .btn-row .btn { flex: 1; }
+  .btn-small { font-size: 12px; padding: 8px 12px; width: auto; display: inline-block; }
+  .btn-icon {
+    background: var(--surface2); border: 1px solid var(--border);
+    color: var(--text); padding: 11px 14px; border-radius: 3px;
+    cursor: pointer; font-size: 16px;
+  }
 
-  .invoice-list { margin-top: 8px; }
-  .invoice-item {
-    background: var(--surface);
+  /* ── LIST ITEMS (invoice/expense/etc) ─────────── */
+  .list-item {
+    background: var(--surface); border: 1px solid var(--border);
+    border-left: 3px solid var(--accent2); border-radius: 3px;
+    padding: 10px 12px; margin-bottom: 7px;
+    display: flex; justify-content: space-between; align-items: flex-start; gap: 10px;
+  }
+  .list-item.paid, .list-item.green-marker { border-left-color: var(--green); }
+  .list-item.expense { border-left-color: var(--blue); }
+  .list-item.mileage { border-left-color: var(--purple); }
+  .list-item.quote { border-left-color: var(--muted); }
+  .list-item.quote.accepted { border-left-color: var(--green); }
+  .list-item.quote.declined { border-left-color: var(--red); }
+  .li-left { flex: 1; min-width: 0; }
+  .li-title {
+    font-weight: 600; font-size: 14px; margin-bottom: 3px;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+  .li-meta {
+    font-family: var(--font-mono); font-size: 10.5px;
+    color: var(--muted); line-height: 1.4;
+  }
+  .li-right { text-align: right; flex-shrink: 0; }
+  .li-amount {
+    font-family: var(--font-mono); font-size: 13px; color: var(--text);
+  }
+  .li-sub {
+    font-family: var(--font-mono); font-size: 11px;
+    color: var(--accent); margin-bottom: 3px;
+  }
+  .li-sub.green { color: var(--green); }
+  .li-sub.red { color: var(--red); }
+  .li-thumb {
+    display: inline-block; width: 22px; height: 22px;
+    border-radius: 3px; background-size: cover; background-position: center;
+    margin-left: 6px; vertical-align: middle;
     border: 1px solid var(--border);
-    border-left: 3px solid var(--accent2);
-    border-radius: 3px;
-    padding: 11px 13px;
-    margin-bottom: 8px;
-    display: flex;
-    justify-content: space-between;
-    align-items: flex-start;
-    gap: 10px;
-  }
-  .invoice-item.paid { border-left-color: var(--green); }
-  .inv-left { flex: 1; min-width: 0; }
-  .inv-desc {
-    font-weight: 600;
-    font-size: 15px;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    margin-bottom: 4px;
-  }
-  .inv-meta {
-    font-family: var(--font-mono);
-    font-size: 11px;
-    color: var(--muted);
-    line-height: 1.4;
-  }
-  .inv-right { text-align: right; flex-shrink: 0; }
-  .inv-profit {
-    font-family: var(--font-mono);
-    font-size: 13px;
-    color: var(--text);
-  }
-  .inv-setaside {
-    font-family: var(--font-mono);
-    font-size: 12px;
-    color: var(--accent);
-    margin-bottom: 4px;
   }
 
-  .pill-row { display: flex; gap: 8px; margin-bottom: 14px; flex-wrap: wrap; }
+  /* ── PILLS / TOGGLES ──────────────────────────── */
+  .pill-row { display: flex; gap: 7px; margin-bottom: 12px; flex-wrap: wrap; }
   .pill {
-    padding: 7px 14px;
-    border-radius: 2px;
-    border: 1px solid var(--border);
-    background: var(--surface2);
-    color: var(--muted);
-    font-family: var(--font-display);
-    font-size: 13px;
-    font-weight: 700;
-    text-transform: uppercase;
-    letter-spacing: 0.06em;
-    cursor: pointer;
-    transition: all 0.15s;
+    padding: 6px 12px; border-radius: 2px;
+    border: 1px solid var(--border); background: var(--surface2);
+    color: var(--muted); font-family: var(--font-display);
+    font-size: 12px; font-weight: 700; text-transform: uppercase;
+    letter-spacing: 0.06em; cursor: pointer; transition: all 0.15s;
   }
   .pill.active {
-    background: var(--accent);
-    color: #111;
-    border-color: var(--accent);
+    background: var(--accent); color: #111; border-color: var(--accent);
   }
+  .pill.green.active { background: var(--green); border-color: var(--green); color: #111; }
+  .pill.red.active { background: var(--red); border-color: var(--red); color: #fff; }
 
-  .rate-section {
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: 4px;
-    padding: 14px;
-    margin-bottom: 16px;
-  }
-  .rate-row {
-    display: flex;
-    align-items: center;
-    gap: 14px;
-    margin-top: 10px;
-  }
-  .rate-display {
-    font-family: var(--font-mono);
-    font-size: 32px;
-    color: var(--accent);
-    font-weight: 500;
-    min-width: 80px;
-  }
-  input[type="range"] {
-    flex: 1;
-    -webkit-appearance: none;
-    height: 4px;
-    background: var(--border);
-    border-radius: 2px;
-    outline: none;
-    padding: 0;
-  }
-  input[type="range"]::-webkit-slider-thumb {
-    -webkit-appearance: none;
-    width: 24px; height: 24px;
-    border-radius: 50%;
-    background: var(--accent);
-    cursor: pointer;
-  }
-  input[type="range"]::-moz-range-thumb {
-    width: 24px; height: 24px;
-    border-radius: 50%;
-    background: var(--accent);
-    cursor: pointer;
-    border: none;
-  }
-
+  /* ── BREAKDOWN ────────────────────────────────── */
   .breakdown {
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: 4px;
-    overflow: hidden;
-    margin-bottom: 16px;
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 4px; overflow: hidden; margin-bottom: 14px;
   }
   .breakdown-row {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 11px 14px;
-    border-bottom: 1px solid var(--border);
-    font-size: 14px;
-    gap: 12px;
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 10px 13px; border-bottom: 1px solid var(--border);
+    font-size: 13px; gap: 10px;
   }
   .breakdown-row:last-child { border-bottom: none; }
   .breakdown-row.total { background: var(--surface2); font-weight: 600; }
   .breakdown-row.positive .bd-val { color: var(--green); }
   .breakdown-row.highlight-row { background: rgba(240,165,0,0.08); }
   .bd-label {
-    color: var(--muted);
-    font-family: var(--font-display);
-    font-size: 13px;
-    font-weight: 600;
-    text-transform: uppercase;
-    letter-spacing: 0.06em;
-    flex: 1;
+    color: var(--muted); font-family: var(--font-display);
+    font-size: 12px; font-weight: 600; text-transform: uppercase;
+    letter-spacing: 0.06em; flex: 1;
   }
   .bd-label small {
-    display: block;
-    font-size: 10px;
-    color: var(--muted);
-    opacity: 0.7;
-    font-weight: 500;
-    letter-spacing: 0.02em;
-    text-transform: none;
-    margin-top: 1px;
+    display: block; font-size: 10px; color: var(--muted); opacity: 0.7;
+    font-weight: 500; letter-spacing: 0.02em; text-transform: none; margin-top: 1px;
   }
   .bd-val {
-    font-family: var(--font-mono);
-    font-size: 14px;
-    color: var(--text);
-    white-space: nowrap;
+    font-family: var(--font-mono); font-size: 13px;
+    color: var(--text); white-space: nowrap;
   }
 
+  /* ── INFO/STATUS BOXES ────────────────────────── */
   .info-box {
     background: rgba(240,165,0,0.06);
     border: 1px solid rgba(240,165,0,0.25);
-    border-radius: 4px;
-    padding: 12px 14px;
-    font-size: 13px;
-    color: var(--muted);
-    line-height: 1.55;
-    margin-bottom: 14px;
+    border-radius: 4px; padding: 11px 13px;
+    font-size: 12.5px; color: var(--muted);
+    line-height: 1.5; margin-bottom: 13px;
   }
   .info-box.warning {
-    background: rgba(224,92,92,0.08);
-    border-color: rgba(224,92,92,0.3);
+    background: rgba(224,92,92,0.08); border-color: rgba(224,92,92,0.3);
+  }
+  .info-box.success {
+    background: rgba(76,175,125,0.08); border-color: rgba(76,175,125,0.3);
+  }
+  .info-box.blue {
+    background: rgba(91,141,239,0.06); border-color: rgba(91,141,239,0.25);
   }
   .info-box strong { color: var(--accent); }
   .info-box.warning strong { color: var(--red); }
+  .info-box.success strong { color: var(--green); }
+  .info-box.blue strong { color: var(--blue); }
 
+  /* ── EMPTY STATE ──────────────────────────────── */
   .empty {
-    text-align: center;
-    padding: 36px 20px;
-    color: var(--muted);
-    font-family: var(--font-display);
-    font-size: 14px;
-    font-weight: 600;
-    text-transform: uppercase;
-    letter-spacing: 0.08em;
+    text-align: center; padding: 32px 18px;
+    color: var(--muted); font-family: var(--font-display);
+    font-size: 13px; font-weight: 600;
+    text-transform: uppercase; letter-spacing: 0.08em;
   }
 
-  .divider { height: 1px; background: var(--border); margin: 18px 0; }
+  .divider { height: 1px; background: var(--border); margin: 16px 0; }
 
+  /* ── MODAL ────────────────────────────────────── */
   .modal-overlay {
-    display: none;
-    position: fixed;
-    inset: 0;
-    background: rgba(0,0,0,0.75);
-    z-index: 200;
-    align-items: flex-end;
-    justify-content: center;
+    display: none; position: fixed; inset: 0;
+    background: rgba(0,0,0,0.75); z-index: 250;
+    align-items: flex-end; justify-content: center;
   }
   .modal-overlay.open { display: flex; }
   .modal {
-    background: var(--surface);
-    border-top: 2px solid var(--accent);
-    border-radius: 8px 8px 0 0;
-    padding: 20px;
-    width: 100%;
-    max-width: 600px;
-    max-height: 90vh;
-    overflow-y: auto;
+    background: var(--surface); border-top: 2px solid var(--accent);
+    border-radius: 8px 8px 0 0; padding: 18px;
+    width: 100%; max-width: 600px;
+    max-height: 90vh; overflow-y: auto;
   }
   .modal-title {
-    font-family: var(--font-display);
-    font-size: 20px;
-    font-weight: 800;
-    text-transform: uppercase;
-    letter-spacing: 0.08em;
-    margin-bottom: 14px;
+    font-family: var(--font-display); font-size: 18px; font-weight: 800;
+    text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 12px;
   }
 
+  /* ── TOAST ────────────────────────────────────── */
   .toast {
-    position: fixed;
-    bottom: 24px;
-    left: 50%;
+    position: fixed; bottom: 20px; left: 50%;
     transform: translateX(-50%) translateY(100px);
-    background: var(--surface);
-    border: 1px solid var(--green);
-    color: var(--green);
-    padding: 11px 18px;
-    border-radius: 4px;
-    font-family: var(--font-display);
-    font-size: 13px;
-    font-weight: 700;
-    text-transform: uppercase;
-    letter-spacing: 0.08em;
+    background: var(--surface); border: 1px solid var(--green);
+    color: var(--green); padding: 10px 16px; border-radius: 4px;
+    font-family: var(--font-display); font-size: 12px;
+    font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em;
     z-index: 300;
     transition: transform 0.3s ease, opacity 0.3s ease;
-    opacity: 0;
-    box-shadow: 0 6px 20px rgba(0,0,0,0.5);
+    opacity: 0; box-shadow: 0 6px 20px rgba(0,0,0,0.5);
   }
-  .toast.show {
-    transform: translateX(-50%) translateY(0);
-    opacity: 1;
-  }
+  .toast.show { transform: translateX(-50%) translateY(0); opacity: 1; }
   .toast.error { border-color: var(--red); color: var(--red); }
 
-  .field-hint {
-    color: var(--muted);
-    font-size: 11px;
-    margin-top: 4px;
-    font-style: italic;
+  /* ── RECEIPT THUMB / IMAGE PREVIEW ────────────── */
+  .image-grid {
+    display: grid; grid-template-columns: repeat(3, 1fr);
+    gap: 6px; margin-top: 8px;
+  }
+  .image-thumb {
+    position: relative; aspect-ratio: 1;
+    background: var(--surface2); border: 1px solid var(--border);
+    border-radius: 3px; overflow: hidden; cursor: pointer;
+  }
+  .image-thumb img { width: 100%; height: 100%; object-fit: cover; }
+  .image-thumb .rm {
+    position: absolute; top: 2px; right: 2px;
+    background: rgba(0,0,0,0.7); color: white;
+    width: 20px; height: 20px; border-radius: 50%;
+    font-size: 14px; line-height: 20px; text-align: center;
+    cursor: pointer;
+  }
+  .lightbox {
+    display: none; position: fixed; inset: 0;
+    background: rgba(0,0,0,0.9); z-index: 350;
+    align-items: center; justify-content: center; padding: 20px;
+  }
+  .lightbox.open { display: flex; }
+  .lightbox img { max-width: 100%; max-height: 100%; object-fit: contain; }
+  .lightbox .close {
+    position: absolute; top: 20px; right: 20px;
+    color: white; font-size: 28px; background: none; border: none;
+    cursor: pointer;
   }
 
+  /* ── RATE SECTION (settings) ──────────────────── */
+  .rate-section {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 4px; padding: 13px; margin-bottom: 14px;
+  }
+  .rate-row {
+    display: flex; align-items: center; gap: 14px; margin-top: 10px;
+  }
+  .rate-display {
+    font-family: var(--font-mono); font-size: 28px; color: var(--accent);
+    font-weight: 500; min-width: 70px;
+  }
+  input[type="range"] {
+    flex: 1; -webkit-appearance: none; height: 4px;
+    background: var(--border); border-radius: 2px; outline: none; padding: 0;
+  }
+  input[type="range"]::-webkit-slider-thumb {
+    -webkit-appearance: none; width: 22px; height: 22px;
+    border-radius: 50%; background: var(--accent); cursor: pointer;
+  }
+  input[type="range"]::-moz-range-thumb {
+    width: 22px; height: 22px; border-radius: 50%;
+    background: var(--accent); cursor: pointer; border: none;
+  }
+
+  /* ── STORAGE STATUS ───────────────────────────── */
   .storage-status {
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: 4px;
-    padding: 12px 14px;
-    margin-bottom: 14px;
-    font-family: var(--font-mono);
-    font-size: 12px;
-    color: var(--muted);
-    line-height: 1.5;
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 4px; padding: 11px 13px; margin-bottom: 12px;
+    font-family: var(--font-mono); font-size: 11.5px;
+    color: var(--muted); line-height: 1.5;
   }
   .storage-status .row {
-    display: flex;
-    justify-content: space-between;
-    margin-bottom: 4px;
+    display: flex; justify-content: space-between; margin-bottom: 3px;
   }
   .storage-status .row:last-child { margin-bottom: 0; }
   .storage-status .ok { color: var(--green); }
   .storage-status .warn { color: var(--accent); }
+
+  /* ── DASHBOARD TILES ──────────────────────────── */
+  .quick-tiles {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 8px;
+    margin-bottom: 16px;
+  }
+  .quick-tile {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 4px; padding: 13px 11px;
+    text-align: center; cursor: pointer; transition: all 0.15s;
+    text-transform: uppercase; font-family: var(--font-display);
+    font-weight: 700; letter-spacing: 0.08em; font-size: 13px;
+    color: var(--text);
+  }
+  .quick-tile:active { background: var(--surface2); }
+  .quick-tile .qt-icon {
+    display: block; font-size: 22px; margin-bottom: 4px;
+    color: var(--accent);
+  }
+  .quick-tile.green .qt-icon { color: var(--green); }
+  .quick-tile.blue .qt-icon { color: var(--blue); }
+  .quick-tile.purple .qt-icon { color: var(--purple); }
+
+  /* ── BAS / DUE DATE BOX ───────────────────────── */
+  .due-card {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 4px; padding: 12px; margin-bottom: 10px;
+    display: flex; align-items: center; justify-content: space-between; gap: 12px;
+  }
+  .due-card.urgent { border-left: 3px solid var(--red); }
+  .due-card.soon { border-left: 3px solid var(--accent); }
+  .due-card.ok { border-left: 3px solid var(--green); }
+  .due-card-left h4 {
+    font-family: var(--font-display); font-size: 13px;
+    font-weight: 800; text-transform: uppercase; letter-spacing: 0.08em;
+  }
+  .due-card-left .due-when {
+    font-family: var(--font-mono); font-size: 11px;
+    color: var(--muted); margin-top: 2px;
+  }
+  .due-card-right {
+    font-family: var(--font-mono); font-size: 14px;
+    color: var(--accent); font-weight: 500;
+  }
+
+  /* ── QUOTE PREVIEW (in app) ───────────────────── */
+  .quote-preview {
+    background: white; color: #222; padding: 24px;
+    border-radius: 4px; margin-top: 12px;
+    font-family: 'Barlow', sans-serif; min-height: 400px;
+  }
+  .quote-preview .qp-header {
+    display: flex; justify-content: space-between;
+    align-items: flex-start; margin-bottom: 18px;
+    border-bottom: 2px solid #222; padding-bottom: 12px;
+  }
+  .quote-preview .qp-logo {
+    max-width: 110px; max-height: 70px; object-fit: contain;
+  }
+  .quote-preview .qp-business { text-align: right; font-size: 11px; line-height: 1.4; }
+  .quote-preview .qp-business strong {
+    display: block; font-size: 16px; margin-bottom: 4px;
+    text-transform: uppercase; letter-spacing: 0.04em;
+  }
+  .quote-preview h2 {
+    font-family: var(--font-display); font-size: 26px;
+    text-transform: uppercase; letter-spacing: 0.08em;
+    margin-bottom: 12px;
+  }
+  .quote-preview .qp-meta {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 14px;
+    font-size: 12px; margin-bottom: 18px;
+  }
+  .quote-preview .qp-meta strong { display: block; margin-bottom: 3px; font-size: 10px; text-transform: uppercase; letter-spacing: 0.08em; color: #555; }
+  .quote-preview table {
+    width: 100%; border-collapse: collapse; margin-bottom: 14px; font-size: 13px;
+  }
+  .quote-preview th {
+    text-align: left; background: #f5f5f5;
+    padding: 7px 9px; font-family: var(--font-display);
+    font-size: 11px; text-transform: uppercase; letter-spacing: 0.06em;
+    border-bottom: 1px solid #ccc;
+  }
+  .quote-preview th.r { text-align: right; }
+  .quote-preview td { padding: 7px 9px; border-bottom: 1px solid #eee; }
+  .quote-preview td.r { text-align: right; font-family: var(--font-mono); }
+  .quote-preview .qp-totals {
+    margin-left: auto; width: 50%; font-size: 13px;
+  }
+  .quote-preview .qp-totals .r { text-align: right; font-family: var(--font-mono); }
+  .quote-preview .qp-totals tr.tot {
+    background: #f5f5f5; font-weight: 700;
+  }
+  .quote-preview .qp-totals tr.tot td {
+    border-bottom: 2px solid #222; border-top: 2px solid #222;
+  }
+  .quote-preview .qp-notes {
+    font-size: 11px; color: #555;
+    border-top: 1px solid #eee; padding-top: 10px; margin-top: 16px;
+    line-height: 1.5; white-space: pre-wrap;
+  }
+
+  /* ── LINE ITEMS EDITOR ────────────────────────── */
+  .line-item {
+    background: var(--surface2); border: 1px solid var(--border);
+    border-radius: 3px; padding: 10px; margin-bottom: 8px;
+  }
+  .line-item-header {
+    display: flex; justify-content: space-between;
+    align-items: center; margin-bottom: 8px;
+  }
+  .line-item-header .label {
+    font-family: var(--font-display); font-size: 11px;
+    text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted);
+  }
+
+  /* ── LOGO UPLOAD ──────────────────────────────── */
+  .logo-upload {
+    background: var(--surface2); border: 1px dashed var(--border);
+    border-radius: 4px; padding: 14px; text-align: center;
+    cursor: pointer; margin-bottom: 12px;
+  }
+  .logo-upload img { max-width: 130px; max-height: 70px; }
+  .logo-upload .ph { color: var(--muted); font-family: var(--font-display); font-size: 12px; text-transform: uppercase; letter-spacing: 0.08em; }
+
+  /* ── CHIPS ────────────────────────────────────── */
+  .chip-group { display: flex; flex-wrap: wrap; gap: 5px; margin-bottom: 11px; }
+  .chip {
+    padding: 5px 10px; background: var(--surface2);
+    border: 1px solid var(--border); border-radius: 12px;
+    font-size: 12px; cursor: pointer; color: var(--muted);
+    transition: all 0.15s; font-family: var(--font-body);
+  }
+  .chip.active { background: var(--accent); color: #111; border-color: var(--accent); }
 </style>
 </head>
 <body>
 
 <header>
+  <button class="menu-btn" id="btn-menu">☰</button>
   <div class="brand">
     <h1>⚒ Tax Tracker</h1>
     <span class="subtitle">QLD Sole Trader</span>
@@ -568,119 +629,187 @@
   <div class="save-status" id="save-status">●</div>
 </header>
 
-<nav>
-  <button class="active" data-page="dashboard">Dashboard</button>
-  <button data-page="add">+ Invoice</button>
-  <button data-page="invoices">History</button>
-  <button data-page="estimate">Tax Est.</button>
-  <button data-page="settings">Settings</button>
-</nav>
+<div class="drawer-overlay" id="drawer-overlay"></div>
+<aside class="drawer" id="drawer">
+  <div class="drawer-header">
+    <h2 id="drawer-business-name">My Business</h2>
+    <div id="drawer-fy-label">FY2025–26 · Sole Trader</div>
+  </div>
+  <nav class="drawer-nav">
+    <div class="section-divider">Overview</div>
+    <button data-page="dashboard" class="active"><span class="nav-icon">⌂</span> Dashboard</button>
+
+    <div class="section-divider">Income</div>
+    <button data-page="invoices"><span class="nav-icon">$</span> Invoices</button>
+    <button data-page="quotes"><span class="nav-icon">✎</span> Quotes</button>
+
+    <div class="section-divider">Expenses</div>
+    <button data-page="expenses"><span class="nav-icon">⊟</span> Expenses</button>
+    <button data-page="mileage"><span class="nav-icon">⟶</span> Mileage</button>
+    <button data-page="assets"><span class="nav-icon">⚙</span> Tools &amp; Assets</button>
+
+    <div class="section-divider">Tax</div>
+    <button data-page="estimate"><span class="nav-icon">∑</span> Tax Estimate</button>
+    <button data-page="bas"><span class="nav-icon">▦</span> BAS &amp; PAYG</button>
+    <button data-page="setaside"><span class="nav-icon">⛁</span> Set-Aside</button>
+
+    <div class="section-divider">Tools</div>
+    <button data-page="export"><span class="nav-icon">↓</span> Export / Accountant</button>
+    <button data-page="settings"><span class="nav-icon">⚙</span> Settings</button>
+  </nav>
+</aside>
 
 <!-- ── DASHBOARD ──────────────────────────────────── -->
 <section id="page-dashboard" class="page active">
   <div class="set-aside-box" id="dash-setaside-box">
-    <div class="set-aside-label">Total to set aside</div>
+    <div class="set-aside-label">Tax to set aside</div>
     <div class="set-aside-amount" id="dash-setaside">$0.00</div>
-    <div class="set-aside-sub">Based on <span id="dash-rate">27</span>% of profit · <span id="dash-rate-mode">auto</span></div>
+    <div class="set-aside-sub" id="dash-setaside-sub">Based on <span id="dash-rate">27</span>% of profit</div>
+    <div class="set-aside-progress" id="dash-setaside-progress-wrap" style="display:none">
+      <div class="set-aside-progress-bar" id="dash-setaside-progress" style="width:0%"></div>
+    </div>
+    <div class="set-aside-sub" id="dash-setaside-saved" style="display:none"></div>
   </div>
+
   <div class="summary-grid">
     <div class="summary-card">
-      <div class="card-label">Gross Invoiced</div>
+      <div class="card-label">Income YTD</div>
       <div class="card-value highlight" id="dash-gross">$0.00</div>
     </div>
+    <div class="summary-card blue">
+      <div class="card-label">Expenses YTD</div>
+      <div class="card-value" id="dash-expenses">$0.00</div>
+    </div>
     <div class="summary-card green">
-      <div class="card-label">Total Profit</div>
+      <div class="card-label">Profit YTD</div>
       <div class="card-value green-val" id="dash-profit">$0.00</div>
     </div>
-    <div class="summary-card orange">
-      <div class="card-label">Materials</div>
-      <div class="card-value" id="dash-materials">$0.00</div>
-    </div>
-    <div class="summary-card muted">
-      <div class="card-label">Invoices Logged</div>
-      <div class="card-value" id="dash-count">0</div>
+    <div class="summary-card red">
+      <div class="card-label">Overdue Invoices</div>
+      <div class="card-value" id="dash-overdue">0</div>
+      <div class="card-sub" id="dash-overdue-amt">$0.00 owed</div>
     </div>
   </div>
+
   <div class="info-box warning" id="gst-warning" style="display:none">
-    <strong>⚠ GST Threshold:</strong> Your turnover is approaching or has passed $75,000. You may need to register for GST. Confirm with a registered tax agent.
+    <strong>⚠ GST Threshold:</strong> Turnover approaching/past $75,000. Register for GST. Switch on GST mode in Settings once registered.
   </div>
-  <div class="section-header">Recent Jobs</div>
+
+  <div class="section-header">Due Soon</div>
+  <div id="dash-due"></div>
+
+  <div class="section-header">Quick Actions</div>
+  <div class="quick-tiles">
+    <div class="quick-tile" data-page="invoices"><span class="qt-icon">$</span>Invoice</div>
+    <div class="quick-tile blue" data-page="expenses"><span class="qt-icon">⊟</span>Expense</div>
+    <div class="quick-tile purple" data-page="mileage"><span class="qt-icon">⟶</span>Mileage</div>
+    <div class="quick-tile green" data-page="quotes"><span class="qt-icon">✎</span>Quote</div>
+  </div>
+
+  <div class="section-header">Recent Activity</div>
   <div id="dash-recent"></div>
 </section>
 
-<!-- ── ADD INVOICE ────────────────────────────────── -->
-<section id="page-add" class="page">
-  <div class="section-header">Log an Invoice</div>
-  <div class="form-group">
-    <label for="inv-desc">Job Description</label>
-    <input type="text" id="inv-desc" placeholder="e.g. Fix fence at Smith St" autocomplete="off">
-  </div>
-  <div class="row2">
-    <div class="form-group">
-      <label for="inv-total">Invoice Total ($)</label>
-      <input type="number" id="inv-total" placeholder="0.00" step="0.01" min="0" inputmode="decimal">
-    </div>
-    <div class="form-group">
-      <label for="inv-materials">Materials ($)</label>
-      <input type="number" id="inv-materials" placeholder="0.00" step="0.01" min="0" inputmode="decimal">
-    </div>
-  </div>
-  <div class="form-group">
-    <label for="inv-date">Date</label>
-    <input type="date" id="inv-date">
-  </div>
-  <div class="form-group">
-    <label>Status</label>
-    <div class="pill-row">
-      <div class="pill active" data-paid="false">Unpaid</div>
-      <div class="pill" data-paid="true">Paid</div>
-    </div>
-  </div>
-  <div id="inv-preview" style="display:none; margin-bottom:14px;">
-    <div class="breakdown">
-      <div class="breakdown-row">
-        <span class="bd-label">Invoice Total</span>
-        <span class="bd-val" id="prev-total">$0</span>
-      </div>
-      <div class="breakdown-row">
-        <span class="bd-label">Materials</span>
-        <span class="bd-val" id="prev-materials">−$0</span>
-      </div>
-      <div class="breakdown-row">
-        <span class="bd-label">Taxable Profit</span>
-        <span class="bd-val" id="prev-profit">$0</span>
-      </div>
-      <div class="breakdown-row total highlight-row">
-        <span class="bd-label">Set Aside</span>
-        <span class="bd-val" id="prev-setaside" style="color:var(--accent)">$0</span>
-      </div>
-    </div>
-  </div>
-  <button class="btn btn-primary" id="btn-add-invoice">Add Invoice</button>
-</section>
-
-<!-- ── HISTORY ────────────────────────────────────── -->
+<!-- ── INVOICES ───────────────────────────────────── -->
 <section id="page-invoices" class="page">
-  <div class="section-header">Invoice History <span class="badge" id="hist-count">0</span></div>
+  <div class="section-header">Invoices <span class="badge" id="inv-count">0</span></div>
+  <button class="btn btn-primary" id="btn-new-invoice" style="margin-bottom:14px">+ New Invoice</button>
   <div class="pill-row">
-    <div class="pill active" data-filter="all">All</div>
-    <div class="pill" data-filter="paid">Paid</div>
-    <div class="pill" data-filter="unpaid">Unpaid</div>
+    <div class="pill active" data-inv-filter="all">All</div>
+    <div class="pill" data-inv-filter="unpaid">Unpaid</div>
+    <div class="pill" data-inv-filter="overdue">Overdue</div>
+    <div class="pill" data-inv-filter="paid">Paid</div>
   </div>
   <div id="invoice-list"></div>
+</section>
+
+<!-- ── QUOTES ─────────────────────────────────────── -->
+<section id="page-quotes" class="page">
+  <div class="section-header">Quotes <span class="badge" id="quote-count">0</span></div>
+  <button class="btn btn-primary" id="btn-new-quote" style="margin-bottom:14px">+ New Quote</button>
+  <div class="pill-row">
+    <div class="pill active" data-quote-filter="all">All</div>
+    <div class="pill" data-quote-filter="sent">Sent</div>
+    <div class="pill" data-quote-filter="accepted">Accepted</div>
+    <div class="pill" data-quote-filter="declined">Declined</div>
+  </div>
+  <div id="quote-list"></div>
+</section>
+
+<!-- ── EXPENSES ───────────────────────────────────── -->
+<section id="page-expenses" class="page">
+  <div class="section-header">Expenses <span class="badge" id="exp-count">0</span></div>
+  <button class="btn btn-primary" id="btn-new-expense" style="margin-bottom:14px">+ New Expense</button>
+  <div class="summary-grid">
+    <div class="summary-card blue">
+      <div class="card-label">Total YTD</div>
+      <div class="card-value" id="exp-total">$0.00</div>
+    </div>
+    <div class="summary-card muted">
+      <div class="card-label">This Month</div>
+      <div class="card-value" id="exp-month">$0.00</div>
+    </div>
+  </div>
+  <div class="section-header">By Category</div>
+  <div id="exp-by-cat" style="margin-bottom:14px"></div>
+  <div class="section-header">All Expenses</div>
+  <div class="chip-group" id="exp-cat-chips"></div>
+  <div id="expense-list"></div>
+</section>
+
+<!-- ── MILEAGE ────────────────────────────────────── -->
+<section id="page-mileage" class="page">
+  <div class="section-header">Mileage Log <span class="badge" id="mil-count">0</span></div>
+  <button class="btn btn-primary" id="btn-new-mileage" style="margin-bottom:14px">+ Log Trip</button>
+  <div class="summary-grid">
+    <div class="summary-card purple">
+      <div class="card-label">Business km YTD</div>
+      <div class="card-value" id="mil-total">0</div>
+    </div>
+    <div class="summary-card green">
+      <div class="card-label">Deductible @ 88c/km</div>
+      <div class="card-value green-val" id="mil-deduction">$0.00</div>
+      <div class="card-sub" id="mil-deduction-sub">Capped at 5,000km</div>
+    </div>
+  </div>
+  <div class="info-box blue">
+    <strong>ATO Cents-per-km method:</strong> 88c per business km up to 5,000km per year. No logbook needed but you must be able to show how you arrived at the km figure. For more than 5,000km consider the logbook method (consult a tax agent).
+  </div>
+  <div id="mileage-list"></div>
+</section>
+
+<!-- ── ASSETS / DEPRECIATION ──────────────────────── -->
+<section id="page-assets" class="page">
+  <div class="section-header">Tools &amp; Assets <span class="badge" id="asset-count">0</span></div>
+  <button class="btn btn-primary" id="btn-new-asset" style="margin-bottom:14px">+ Add Asset</button>
+  <div class="info-box">
+    <strong>Instant write-off threshold</strong> set in Settings (currently <span id="asset-threshold">$20,000</span>). Items under this are deducted in full the year you buy them. Items over go into the small business pool — 15% depreciation first year, 30% thereafter.
+  </div>
+  <div class="summary-grid">
+    <div class="summary-card green">
+      <div class="card-label">Instant Write-off YTD</div>
+      <div class="card-value green-val" id="asset-writeoff">$0.00</div>
+    </div>
+    <div class="summary-card orange">
+      <div class="card-label">Depreciation Pool</div>
+      <div class="card-value" id="asset-pool">$0.00</div>
+      <div class="card-sub" id="asset-pool-dep">$0.00 deductible</div>
+    </div>
+  </div>
+  <div id="asset-list"></div>
 </section>
 
 <!-- ── TAX ESTIMATE ───────────────────────────────── -->
 <section id="page-estimate" class="page">
   <div class="section-header">FY Tax Estimate</div>
   <div class="info-box">
-    <strong>Note:</strong> Rough guide only. Uses ATO resident individual rates + 2% Medicare levy. Not financial advice — verify with a registered tax agent.
+    Rough guide only. Uses ATO resident individual rates + 2% Medicare levy. Not financial advice — verify with a registered tax agent.
   </div>
 
   <div class="section-header">Employment Income (PAYG)</div>
   <div class="row2">
     <div class="form-group">
-      <label for="payg-income">Salary / Wages ($)</label>
+      <label for="payg-income">Salary/Wages ($)</label>
       <input type="number" id="payg-income" placeholder="0" inputmode="decimal" data-persist>
     </div>
     <div class="form-group">
@@ -689,15 +818,14 @@
     </div>
   </div>
   <div class="form-group">
-    <label for="payg-extra">Voluntary Extra Tax Paid ($)</label>
+    <label for="payg-extra">Voluntary Extra Tax ($)</label>
     <input type="number" id="payg-extra" placeholder="0" inputmode="decimal" data-persist>
-    <div class="field-hint">Any extra tax you paid on top of normal withholding</div>
   </div>
 
   <div class="divider"></div>
   <div class="section-header">Historical Business Totals</div>
   <div class="info-box">
-    Enter totals from <strong>before</strong> you started logging invoices here (from your account statements or records). These are <strong>added to</strong> your logged invoices below for the estimate.
+    Totals from <strong>before</strong> you started logging here. These add to the figures from this app's logged invoices/expenses.
   </div>
   <div class="row2">
     <div class="form-group">
@@ -705,15 +833,15 @@
       <input type="number" id="ytd-gross" placeholder="0" inputmode="decimal" data-persist>
     </div>
     <div class="form-group">
-      <label for="ytd-materials">Past Materials ($)</label>
+      <label for="ytd-materials">Past Expenses ($)</label>
       <input type="number" id="ytd-materials" placeholder="0" inputmode="decimal" data-persist>
     </div>
   </div>
 
   <div class="divider"></div>
-  <div class="section-header">Additional Deductions</div>
+  <div class="section-header">Other Deductions</div>
   <div class="info-box">
-    Other business deductions not in materials above (tools, vehicle, insurance, phone, etc.)
+    Anything else not captured in expenses, mileage, or assets above.
   </div>
   <div class="form-group">
     <label for="other-deductions">Other Deductions ($)</label>
@@ -723,98 +851,228 @@
   <div class="divider"></div>
   <div class="section-header">Estimate</div>
   <div class="breakdown" id="estimate-breakdown"></div>
-  <div class="set-aside-box" id="est-result-box" style="margin-top:14px">
+  <div class="set-aside-box" id="est-result-box" style="margin-top:12px">
     <div class="set-aside-label" id="est-result-label">Estimated tax still owed</div>
     <div class="set-aside-amount" id="est-still-owed">$0.00</div>
-    <div class="set-aside-sub" id="est-sub">After withholding credits</div>
+    <div class="set-aside-sub" id="est-sub">After credits</div>
   </div>
+</section>
+
+<!-- ── BAS / PAYG ─────────────────────────────────── -->
+<section id="page-bas" class="page">
+  <div class="section-header">BAS &amp; PAYG Instalments</div>
+  <div class="info-box">
+    BAS due 28 Oct, 28 Feb, 28 Apr, 28 Jul each year. PAYG instalments are pre-payments toward your annual tax bill — track what you've paid here, and the Tax Estimate page will deduct it from what's owed.
+  </div>
+  <div id="bas-quarters"></div>
+  <div class="divider"></div>
+  <div class="section-header">Add PAYG Instalment Paid</div>
+  <div class="row2">
+    <div class="form-group">
+      <label>Quarter</label>
+      <select id="payg-q">
+        <option value="Q1">Q1 (Jul–Sep)</option>
+        <option value="Q2">Q2 (Oct–Dec)</option>
+        <option value="Q3">Q3 (Jan–Mar)</option>
+        <option value="Q4">Q4 (Apr–Jun)</option>
+      </select>
+    </div>
+    <div class="form-group">
+      <label>Amount Paid ($)</label>
+      <input type="number" id="payg-amount" placeholder="0" inputmode="decimal">
+    </div>
+  </div>
+  <button class="btn btn-primary" id="btn-add-payg">Record PAYG Payment</button>
+</section>
+
+<!-- ── SET ASIDE TRACKER ──────────────────────────── -->
+<section id="page-setaside" class="page">
+  <div class="section-header">Set-Aside Tracker</div>
+  <div class="info-box">
+    Log how much you've actually moved to your tax savings account, so you can see if you're on track.
+  </div>
+  <div class="set-aside-box green" id="sa-status-box">
+    <div class="set-aside-label">Saved vs Target</div>
+    <div class="set-aside-amount" id="sa-status">$0 / $0</div>
+    <div class="set-aside-sub" id="sa-status-sub">Add deposits below</div>
+    <div class="set-aside-progress">
+      <div class="set-aside-progress-bar" id="sa-progress-bar" style="width:0%"></div>
+    </div>
+  </div>
+  <div class="section-header">Add Deposit</div>
+  <div class="row2">
+    <div class="form-group">
+      <label>Date</label>
+      <input type="date" id="sa-date">
+    </div>
+    <div class="form-group">
+      <label>Amount ($)</label>
+      <input type="number" id="sa-amount" placeholder="0" inputmode="decimal">
+    </div>
+  </div>
+  <button class="btn btn-primary" id="btn-add-deposit">Record Deposit</button>
+  <div class="section-header" style="margin-top:14px">Deposits</div>
+  <div id="deposit-list"></div>
+</section>
+
+<!-- ── EXPORT ─────────────────────────────────────── -->
+<section id="page-export" class="page">
+  <div class="section-header">Export for Accountant</div>
+  <div class="info-box success">
+    Generate a clean CSV pack of all your data — invoices, expenses, mileage, assets — grouped and totalled by category. Hand this to your accountant at tax time.
+  </div>
+  <div class="row2">
+    <button class="btn btn-primary" id="btn-csv-all">⬇ Full CSV Pack</button>
+    <button class="btn btn-secondary" id="btn-csv-summary">⬇ Summary Only</button>
+  </div>
+  <div class="divider"></div>
+  <div class="section-header">Year-End Snapshot</div>
+  <div class="info-box">
+    At end of financial year, archive everything as a snapshot. Then clear data to start fresh for the new FY (your snapshots are saved in backup files).
+  </div>
+  <button class="btn btn-secondary" id="btn-archive">📦 Archive Current FY</button>
+  <div class="section-header" style="margin-top:14px">Saved Snapshots</div>
+  <div id="snapshot-list"></div>
 </section>
 
 <!-- ── SETTINGS ───────────────────────────────────── -->
 <section id="page-settings" class="page">
 
-  <div class="section-header">Storage Status</div>
-  <div class="storage-status" id="storage-status">
-    <div class="row"><span>Database:</span><span id="ss-db">…</span></div>
-    <div class="row"><span>Invoices:</span><span id="ss-inv">…</span></div>
-    <div class="row"><span>Last Saved:</span><span id="ss-saved">…</span></div>
+  <div class="section-header">Business Details</div>
+  <div class="form-group">
+    <label>Business / Trading Name</label>
+    <input type="text" id="biz-name" placeholder="e.g. Smith Handyman Services" data-biz>
+  </div>
+  <div class="row2">
+    <div class="form-group">
+      <label>ABN</label>
+      <input type="text" id="biz-abn" placeholder="11 222 333 444" data-biz>
+    </div>
+    <div class="form-group">
+      <label>Phone</label>
+      <input type="tel" id="biz-phone" placeholder="0400 000 000" data-biz>
+    </div>
+  </div>
+  <div class="form-group">
+    <label>Email</label>
+    <input type="email" id="biz-email" placeholder="you@business.com.au" data-biz>
+  </div>
+  <div class="form-group">
+    <label>Address</label>
+    <textarea id="biz-address" placeholder="Business address (for quotes/invoices)" data-biz></textarea>
+  </div>
+  <div class="form-group">
+    <label>Bank Details (for invoice/quote payment instructions)</label>
+    <textarea id="biz-bank" placeholder="BSB · Account · Name" data-biz></textarea>
+  </div>
+
+  <div class="section-header" style="margin-top:14px">Business Logo</div>
+  <div class="logo-upload" id="logo-upload">
+    <img id="logo-preview" style="display:none">
+    <div class="ph" id="logo-placeholder">Tap to upload logo (PNG or JPG)</div>
+  </div>
+  <input type="file" id="logo-file" accept="image/*" style="display:none">
+  <button class="btn-danger btn-small" id="btn-remove-logo" style="display:none">Remove Logo</button>
+
+  <div class="divider"></div>
+  <div class="section-header">GST Mode</div>
+  <div class="info-box">
+    Switch on once you're <strong>registered for GST</strong> (required when turnover hits $75k). This enables GST tracking on invoices and expenses.
+  </div>
+  <div class="pill-row">
+    <div class="pill active" data-gst-mode="off">GST Off</div>
+    <div class="pill" data-gst-mode="on">GST Registered</div>
   </div>
 
   <div class="section-header">Tax Rate</div>
   <div class="rate-section">
     <div class="pill-row">
-      <div class="pill active" data-rate-mode="auto">Auto Estimate</div>
+      <div class="pill active" data-rate-mode="auto">Auto</div>
       <div class="pill" data-rate-mode="manual">Manual</div>
     </div>
     <div id="auto-rate-info" class="info-box" style="margin-bottom:0">
-      <strong>Auto mode</strong> estimates marginal rate based on projected annual profit. Updates as invoices are added.
+      <strong>Auto:</strong> Estimates marginal rate from projected annual profit.
     </div>
     <div id="manual-rate-control" style="display:none">
-      <label>Set Your Rate</label>
+      <label>Set Rate</label>
       <div class="rate-row">
         <div class="rate-display" id="manual-rate-val">27%</div>
         <input type="range" id="rate-slider" min="10" max="47" value="27">
       </div>
-      <div class="field-hint">Common range: 21–32% for most sole traders</div>
     </div>
+  </div>
+
+  <div class="section-header">Asset Threshold</div>
+  <div class="form-group">
+    <label>Instant write-off threshold ($)</label>
+    <input type="number" id="asset-thresh-input" placeholder="20000">
+    <div class="field-hint">Current FY threshold. Items under this are deducted in full; over goes to the depreciation pool.</div>
   </div>
 
   <div class="section-header">Financial Year</div>
   <div class="form-group">
-    <label for="fy-select">Tax Year</label>
+    <label>Tax Year</label>
     <select id="fy-select">
       <option value="2025">FY2024–25</option>
       <option value="2026" selected>FY2025–26</option>
+      <option value="2027">FY2026–27</option>
     </select>
   </div>
 
   <div class="divider"></div>
   <div class="section-header">Backup &amp; Restore</div>
   <div class="info-box">
-    <strong>Save Backup</strong> downloads a complete snapshot (invoices + all form data) as a JSON file. <strong>Load Backup</strong> restores everything from a saved file.
+    <strong>Save Backup</strong> downloads a snapshot of everything (without receipt photos — too large). <strong>Photos Backup</strong> separately downloads all receipt and logo images. <strong>Load Backup</strong> restores from a saved file.
   </div>
   <div class="btn-row" style="margin-bottom:8px">
-    <button class="btn btn-primary" id="btn-export" style="font-size:14px; padding:12px">⬇ Save Backup</button>
-    <button class="btn btn-secondary" id="btn-import" style="font-size:14px; padding:12px">⬆ Load Backup</button>
+    <button class="btn btn-primary btn-small" id="btn-export-data">⬇ Save Backup</button>
+    <button class="btn btn-secondary btn-small" id="btn-import-data">⬆ Load Backup</button>
   </div>
+  <button class="btn btn-secondary btn-small" id="btn-export-photos" style="width:100%; margin-bottom:8px">⬇ Photos Backup (zip)</button>
   <input type="file" id="import-file" accept=".json,application/json" style="display:none">
+
+  <div class="section-header">Storage Status</div>
+  <div class="storage-status">
+    <div class="row"><span>Database:</span><span id="ss-db">…</span></div>
+    <div class="row"><span>Invoices:</span><span id="ss-inv">0</span></div>
+    <div class="row"><span>Expenses:</span><span id="ss-exp">0</span></div>
+    <div class="row"><span>Mileage trips:</span><span id="ss-mil">0</span></div>
+    <div class="row"><span>Receipt photos:</span><span id="ss-photos">0</span></div>
+    <div class="row"><span>Last saved:</span><span id="ss-saved">…</span></div>
+  </div>
 
   <div class="divider"></div>
   <div class="section-header">Danger Zone</div>
   <button class="btn btn-danger" id="btn-clear">Clear All Data</button>
-  <div class="field-hint" style="margin-top:8px;">Deletes all invoices and resets settings on this device.</div>
+  <div class="field-hint" style="margin-top:8px;">Deletes all data and resets settings on this device.</div>
 </section>
 
-<!-- ── MODAL ──────────────────────────────────────── -->
-<div class="modal-overlay" id="delete-modal">
-  <div class="modal">
-    <div class="modal-title">Remove Invoice?</div>
-    <p style="color:var(--muted); font-size:14px; margin-bottom:18px;">This will permanently remove this invoice from your records.</p>
-    <div class="btn-row">
-      <button class="btn btn-secondary" id="btn-cancel-delete">Cancel</button>
-      <button class="btn btn-primary" id="btn-confirm-delete" style="background:var(--red); color:#fff">Remove</button>
-    </div>
-  </div>
+<!-- ── MODAL CONTAINER (forms render here) ────────── -->
+<div class="modal-overlay" id="modal">
+  <div class="modal" id="modal-body"></div>
+</div>
+
+<div class="lightbox" id="lightbox">
+  <button class="close" id="lightbox-close">×</button>
+  <img id="lightbox-img">
 </div>
 
 <div class="toast" id="toast"></div>
 
+<!-- SCRIPT INJECTED BELOW -->
 <script>
 'use strict';
 
 // ════════════════════════════════════════════════════
-//  STORAGE LAYER — IndexedDB primary, localStorage backup
+//  STORAGE LAYER
 // ════════════════════════════════════════════════════
 const DB_NAME = 'TradieTaxTracker';
-const DB_VERSION = 1;
+const DB_VERSION = 2;
 const STORE = 'data';
-const KEY_INVOICES = 'invoices';
-const KEY_SETTINGS = 'settings';
-const KEY_FORM = 'formState';
+const PHOTO_STORE = 'photos';
 
 const Storage = {
-  db: null,
-  available: false,
+  db: null, available: false,
 
   async init() {
     try {
@@ -822,78 +1080,106 @@ const Storage = {
         const req = indexedDB.open(DB_NAME, DB_VERSION);
         req.onupgradeneeded = e => {
           const db = e.target.result;
-          if (!db.objectStoreNames.contains(STORE)) {
-            db.createObjectStore(STORE, { keyPath: 'key' });
-          }
+          if (!db.objectStoreNames.contains(STORE)) db.createObjectStore(STORE, { keyPath: 'key' });
+          if (!db.objectStoreNames.contains(PHOTO_STORE)) db.createObjectStore(PHOTO_STORE, { keyPath: 'id' });
         };
         req.onsuccess = e => resolve(e.target.result);
         req.onerror = e => reject(e.target.error);
-        req.onblocked = () => reject(new Error('blocked'));
       });
       this.available = true;
-      return true;
-    } catch (err) {
-      console.warn('IndexedDB unavailable, falling back to localStorage', err);
-      this.available = false;
-      return false;
-    }
+    } catch (err) { this.available = false; console.warn('IDB unavailable', err); }
   },
 
   async get(key) {
-    if (this.available && this.db) {
+    if (this.available) {
       try {
-        const val = await new Promise((resolve, reject) => {
+        const v = await new Promise((res, rej) => {
           const tx = this.db.transaction(STORE, 'readonly');
           const req = tx.objectStore(STORE).get(key);
-          req.onsuccess = () => resolve(req.result ? req.result.value : null);
-          req.onerror = () => reject(req.error);
+          req.onsuccess = () => res(req.result ? req.result.value : null);
+          req.onerror = () => rej(req.error);
         });
-        if (val != null) return val;
+        if (v != null) return v;
       } catch {}
     }
-    return this._lsGet(key);
+    try { const raw = localStorage.getItem('ttt_' + key); return raw ? JSON.parse(raw) : null; } catch { return null; }
   },
 
   async set(key, value) {
-    // always mirror to localStorage as a safety net
-    this._lsSet(key, value);
-    if (this.available && this.db) {
+    try { localStorage.setItem('ttt_' + key, JSON.stringify(value)); } catch {}
+    if (this.available) {
       try {
-        await new Promise((resolve, reject) => {
+        await new Promise((res, rej) => {
           const tx = this.db.transaction(STORE, 'readwrite');
           const req = tx.objectStore(STORE).put({ key, value });
-          req.onsuccess = () => resolve();
-          req.onerror = () => reject(req.error);
+          req.onsuccess = () => res();
+          req.onerror = () => rej(req.error);
         });
-      } catch (err) {
-        console.warn('IDB write failed', err);
-      }
+      } catch (err) { console.warn('write failed', err); }
     }
   },
 
-  _lsGet(key) {
+  // Photos — stored separately from main data
+  async getPhoto(id) {
+    if (!this.available) return null;
     try {
-      const raw = localStorage.getItem('ttt_' + key);
-      return raw ? JSON.parse(raw) : null;
+      return await new Promise((res, rej) => {
+        const tx = this.db.transaction(PHOTO_STORE, 'readonly');
+        const req = tx.objectStore(PHOTO_STORE).get(id);
+        req.onsuccess = () => res(req.result ? req.result.data : null);
+        req.onerror = () => rej(req.error);
+      });
     } catch { return null; }
   },
 
-  _lsSet(key, value) {
-    try { localStorage.setItem('ttt_' + key, JSON.stringify(value)); return true; }
-    catch { return false; }
+  async setPhoto(id, data) {
+    if (!this.available) return;
+    try {
+      await new Promise((res, rej) => {
+        const tx = this.db.transaction(PHOTO_STORE, 'readwrite');
+        const req = tx.objectStore(PHOTO_STORE).put({ id, data });
+        req.onsuccess = () => res();
+        req.onerror = () => rej(req.error);
+      });
+    } catch (err) { console.warn('photo write failed', err); }
+  },
+
+  async deletePhoto(id) {
+    if (!this.available) return;
+    try {
+      await new Promise((res) => {
+        const tx = this.db.transaction(PHOTO_STORE, 'readwrite');
+        tx.objectStore(PHOTO_STORE).delete(id);
+        tx.oncomplete = () => res();
+        tx.onerror = () => res();
+      });
+    } catch {}
+  },
+
+  async listPhotos() {
+    if (!this.available) return [];
+    try {
+      return await new Promise((res, rej) => {
+        const tx = this.db.transaction(PHOTO_STORE, 'readonly');
+        const req = tx.objectStore(PHOTO_STORE).getAll();
+        req.onsuccess = () => res(req.result || []);
+        req.onerror = () => rej(req.error);
+      });
+    } catch { return []; }
   },
 
   async clear() {
-    ['invoices', 'settings', 'formState'].forEach(k => {
+    ['invoices','settings','formState','expenses','mileage','assets','quotes','deposits','paygPaid','snapshots','business','customers'].forEach(k => {
       try { localStorage.removeItem('ttt_' + k); } catch {}
     });
-    if (this.available && this.db) {
+    if (this.available) {
       try {
-        await new Promise((resolve) => {
-          const tx = this.db.transaction(STORE, 'readwrite');
+        await new Promise((res) => {
+          const tx = this.db.transaction([STORE, PHOTO_STORE], 'readwrite');
           tx.objectStore(STORE).clear();
-          tx.oncomplete = () => resolve();
-          tx.onerror = () => resolve();
+          tx.objectStore(PHOTO_STORE).clear();
+          tx.oncomplete = () => res();
+          tx.onerror = () => res();
         });
       } catch {}
     }
@@ -901,78 +1187,176 @@ const Storage = {
 };
 
 // ════════════════════════════════════════════════════
-//  STATE — single source of truth
+//  IMAGE UTILS — compress photos before storage
 // ════════════════════════════════════════════════════
+async function compressImage(file, maxDim = 1200, quality = 0.7) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = e => {
+      const img = new Image();
+      img.onload = () => {
+        let { width, height } = img;
+        if (width > maxDim || height > maxDim) {
+          if (width > height) { height *= maxDim / width; width = maxDim; }
+          else { width *= maxDim / height; height = maxDim; }
+        }
+        const canvas = document.createElement('canvas');
+        canvas.width = width; canvas.height = height;
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(img, 0, 0, width, height);
+        resolve(canvas.toDataURL('image/jpeg', quality));
+      };
+      img.onerror = reject;
+      img.src = e.target.result;
+    };
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
+}
+
+// ════════════════════════════════════════════════════
+//  STATE
+// ════════════════════════════════════════════════════
+const EXPENSE_CATEGORIES = [
+  { id: 'tools', label: 'Tools & Equipment' },
+  { id: 'vehicle', label: 'Vehicle (fuel/rego/repairs)' },
+  { id: 'phone', label: 'Phone & Internet' },
+  { id: 'insurance', label: 'Insurance' },
+  { id: 'subscriptions', label: 'Subscriptions & Software' },
+  { id: 'accounting', label: 'Accounting & Bank Fees' },
+  { id: 'ppe', label: 'Workwear & PPE' },
+  { id: 'training', label: 'Training & Licences' },
+  { id: 'office', label: 'Home Office' },
+  { id: 'advertising', label: 'Advertising & Marketing' },
+  { id: 'travel', label: 'Travel & Accommodation' },
+  { id: 'other', label: 'Other' }
+];
+
 const State = {
   invoices: [],
-  settings: { rateMode: 'auto', manualRate: 27, fy: '2026' },
-  formState: {
-    'payg-income': '',
-    'payg-withheld': '',
-    'payg-extra': '',
-    'ytd-gross': '',
-    'ytd-materials': '',
-    'other-deductions': ''
+  expenses: [],
+  mileage: [],
+  assets: [],
+  quotes: [],
+  deposits: [],
+  paygPaid: [],   // [{quarter:'Q1', amount, date, fy}]
+  snapshots: [],  // archived FY data
+  customers: [],  // saved client list
+  business: {
+    name: '', abn: '', phone: '', email: '', address: '', bank: '',
+    logo: null  // base64
   },
-  ui: { invPaid: false, filterMode: 'all', deleteId: null, lastSaved: null },
+  settings: {
+    rateMode: 'auto', manualRate: 27, fy: '2026',
+    gstMode: false,
+    assetThreshold: 20000
+  },
+  formState: {
+    'payg-income': '', 'payg-withheld': '', 'payg-extra': '',
+    'ytd-gross': '', 'ytd-materials': '', 'other-deductions': ''
+  },
+  ui: { lastSaved: null, modalContext: null, expCatFilter: 'all', invFilter: 'all', quoteFilter: 'all' },
 
   async load() {
-    const inv = await Storage.get(KEY_INVOICES);
-    const set = await Storage.get(KEY_SETTINGS);
-    const form = await Storage.get(KEY_FORM);
-    if (Array.isArray(inv)) this.invoices = inv;
-    if (set && typeof set === 'object') this.settings = { ...this.settings, ...set };
-    if (form && typeof form === 'object') this.formState = { ...this.formState, ...form };
+    const keys = ['invoices','expenses','mileage','assets','quotes','deposits','paygPaid','snapshots','customers','business','settings','formState'];
+    for (const k of keys) {
+      const v = await Storage.get(k);
+      if (v != null) {
+        if (typeof this[k] === 'object' && !Array.isArray(this[k])) this[k] = { ...this[k], ...v };
+        else this[k] = v;
+      }
+    }
   },
 
-  async saveInvoices() {
-    await Storage.set(KEY_INVOICES, this.invoices);
+  async save(key) {
+    await Storage.set(key, this[key]);
     this._markSaved();
   },
-  async saveSettings() {
-    await Storage.set(KEY_SETTINGS, this.settings);
-    this._markSaved();
-  },
-  async saveFormState() {
-    await Storage.set(KEY_FORM, this.formState);
-    this._markSaved();
-  },
+
   async saveAll() {
-    await Promise.all([
-      Storage.set(KEY_INVOICES, this.invoices),
-      Storage.set(KEY_SETTINGS, this.settings),
-      Storage.set(KEY_FORM, this.formState)
-    ]);
+    const keys = ['invoices','expenses','mileage','assets','quotes','deposits','paygPaid','snapshots','customers','business','settings','formState'];
+    await Promise.all(keys.map(k => Storage.set(k, this[k])));
     this._markSaved();
   },
 
   _markSaved() {
     this.ui.lastSaved = Date.now();
-    UI.flashSaveIndicator();
+    if (typeof UI !== 'undefined') UI.flashSaveIndicator();
   }
 };
+
+// ════════════════════════════════════════════════════
+//  HELPERS
+// ════════════════════════════════════════════════════
+const fmt = n => '$' + Math.abs(n || 0).toLocaleString('en-AU', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+const fmtInt = n => Math.round(n || 0).toLocaleString('en-AU');
+const today = () => new Date().toISOString().split('T')[0];
+const newId = () => Date.now() + Math.random();
+const escape = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const fyLabel = fy => `FY${parseInt(fy)-1}–${String(fy).slice(-2)}`;
+const daysBetween = (a, b) => Math.floor((new Date(b) - new Date(a)) / 86400000);
+const catLabel = id => (EXPENSE_CATEGORIES.find(c => c.id === id) || { label: 'Other' }).label;
+
+// FY date range for current FY setting
+function fyDateRange(fy = State.settings.fy) {
+  const y = parseInt(fy);
+  return { start: `${y-1}-07-01`, end: `${y}-06-30` };
+}
+
+function inCurrentFY(dateStr) {
+  if (!dateStr) return false;
+  const { start, end } = fyDateRange();
+  return dateStr >= start && dateStr <= end;
+}
 
 // ════════════════════════════════════════════════════
 //  CALCULATION ENGINE
 // ════════════════════════════════════════════════════
 const Calc = {
-  fmt(n) {
-    const abs = Math.abs(n);
-    return '$' + abs.toLocaleString('en-AU', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-  },
+  // GST: $1 inclusive = $0.909 ex-GST + $0.091 GST
+  exGst(n) { return State.settings.gstMode ? n / 1.1 : n; },
+  gstOf(n) { return State.settings.gstMode ? n - n / 1.1 : 0; },
 
-  invoiceProfit(inv) { return inv.total - inv.materials; },
-  invoiceSetAside(inv) { return this.invoiceProfit(inv) * this.currentRate(); },
+  invoiceProfit(inv) { return this.exGst(inv.total) - this.exGst(inv.materials || 0); },
 
   totals() {
-    const gross = State.invoices.reduce((s, i) => s + i.total, 0);
-    const materials = State.invoices.reduce((s, i) => s + i.materials, 0);
+    const inv = State.invoices.filter(i => inCurrentFY(i.date));
+    const exp = State.expenses.filter(e => inCurrentFY(e.date));
+    const mil = State.mileage.filter(m => inCurrentFY(m.date));
+    const ast = State.assets.filter(a => inCurrentFY(a.date));
+
+    const gross = inv.reduce((s,i) => s + this.exGst(i.total), 0);
+    const invoiceMaterials = inv.reduce((s,i) => s + this.exGst(i.materials || 0), 0);
+    const expenseTotal = exp.reduce((s,e) => s + this.exGst(e.amount), 0);
+    const milKm = mil.reduce((s,m) => s + (m.km || 0), 0);
+    const milDeduction = Math.min(milKm, 5000) * 0.88;
+    const assetWriteoff = ast
+      .filter(a => a.amount <= State.settings.assetThreshold)
+      .reduce((s,a) => s + this.exGst(a.amount), 0);
+    // Asset pool depreciation (simplified): items over threshold this year added at 15%
+    const poolNewThisYear = ast
+      .filter(a => a.amount > State.settings.assetThreshold)
+      .reduce((s,a) => s + this.exGst(a.amount), 0);
+    const poolDepNewYear = poolNewThisYear * 0.15;
+
+    const totalExpenses = invoiceMaterials + expenseTotal + milDeduction + assetWriteoff + poolDepNewYear;
+    const profit = gross - totalExpenses;
+
+    // GST
+    const gstCollected = State.settings.gstMode
+      ? inv.reduce((s,i) => s + this.gstOf(i.total), 0)
+      : 0;
+    const gstPaid = State.settings.gstMode
+      ? exp.filter(e => e.gstClaimable !== false).reduce((s,e) => s + this.gstOf(e.amount), 0) +
+        ast.filter(a => a.gstClaimable !== false).reduce((s,a) => s + this.gstOf(a.amount), 0)
+      : 0;
+    const gstOwed = gstCollected - gstPaid;
+
     return {
-      gross,
-      materials,
-      profit: gross - materials,
-      setAside: State.invoices.reduce((s, i) => s + this.invoiceSetAside(i), 0),
-      count: State.invoices.length
+      gross, invoiceMaterials, expenseTotal, milKm, milDeduction,
+      assetWriteoff, poolNewThisYear, poolDepNewYear, totalExpenses,
+      profit, count: inv.length, expCount: exp.length,
+      gstCollected, gstPaid, gstOwed
     };
   },
 
@@ -982,17 +1366,17 @@ const Calc = {
   },
 
   projectAnnualProfit() {
-    if (State.invoices.length === 0) return 0;
-    const totalProfit = State.invoices.reduce((s, i) => s + this.invoiceProfit(i), 0);
-    const sorted = [...State.invoices].sort((a, b) => new Date(a.date) - new Date(b.date));
+    const inv = State.invoices.filter(i => inCurrentFY(i.date));
+    if (inv.length === 0) return 0;
+    const sorted = [...inv].sort((a,b) => new Date(a.date) - new Date(b.date));
     const first = new Date(sorted[0].date);
-    const last = new Date(sorted[sorted.length - 1].date);
+    const last = new Date(sorted[sorted.length-1].date);
     const daySpan = Math.max(1, (last - first) / 86400000);
-    if (daySpan < 7) return totalProfit;
-    return (totalProfit / daySpan) * 365;
+    const t = this.totals();
+    if (daySpan < 14) return t.profit;
+    return (t.profit / daySpan) * 365;
   },
 
-  // 2024-25 marginal rates (incl. 2% medicare)
   estimateMarginalRate(income) {
     if (income <= 18200) return 2;
     if (income <= 45000) return 21;
@@ -1001,7 +1385,6 @@ const Calc = {
     return 47;
   },
 
-  // 2024-25 ATO resident individual tax brackets
   calcTaxOwed(income) {
     let tax = 0;
     if (income <= 18200) tax = 0;
@@ -1015,34 +1398,79 @@ const Calc = {
 
   estimate() {
     const f = State.formState;
-    const num = (k) => parseFloat(f[k]) || 0;
+    const num = k => parseFloat(f[k]) || 0;
     const paygIncome = num('payg-income');
     const withheld = num('payg-withheld');
     const extraPaid = num('payg-extra');
     const otherDeductions = num('other-deductions');
-
     const pastGross = num('ytd-gross');
-    const pastMaterials = num('ytd-materials');
-    const hasPast = pastGross > 0 || pastMaterials > 0;
+    const pastExpenses = num('ytd-materials');
 
     const t = this.totals();
     const bizGross = t.gross + pastGross;
-    const bizMaterials = t.materials + pastMaterials;
-    const bizProfit = Math.max(0, bizGross - bizMaterials - otherDeductions);
+    const bizExpenses = t.totalExpenses + pastExpenses + otherDeductions;
+    const bizProfit = Math.max(0, bizGross - bizExpenses);
     const totalIncome = paygIncome + bizProfit;
     const taxOwed = this.calcTaxOwed(totalIncome);
-    const totalCredits = withheld + extraPaid;
+
+    // PAYG instalments paid this FY
+    const paygPaidThisFY = State.paygPaid
+      .filter(p => p.fy === State.settings.fy)
+      .reduce((s,p) => s + p.amount, 0);
+
+    const totalCredits = withheld + extraPaid + paygPaidThisFY;
     const stillOwed = Math.max(0, taxOwed - totalCredits);
     const refund = Math.max(0, totalCredits - taxOwed);
 
     return {
       paygIncome, withheld, extraPaid, otherDeductions,
-      pastGross, pastMaterials, hasPast,
-      loggedGross: t.gross, loggedMaterials: t.materials,
-      bizGross, bizMaterials, bizProfit,
-      totalIncome, taxOwed, totalCredits, stillOwed, refund,
-      invCount: t.count
+      pastGross, pastExpenses, bizGross, bizExpenses, bizProfit,
+      totalIncome, taxOwed, totalCredits, paygPaidThisFY,
+      stillOwed, refund, ...t
     };
+  },
+
+  // Deposits saved vs target
+  setAsideStatus() {
+    const targetTotal = this.totals().profit * this.currentRate();
+    const saved = State.deposits.reduce((s,d) => s + d.amount, 0);
+    return { target: Math.max(0, targetTotal), saved, diff: saved - Math.max(0, targetTotal) };
+  },
+
+  // Overdue invoices (>30 days since date and unpaid)
+  overdueInvoices() {
+    const cutoff = daysBetween(new Date(), new Date()) - 30;
+    return State.invoices.filter(i =>
+      !i.paid && daysBetween(i.date, today()) > 30
+    );
+  },
+
+  // Expenses by category for current FY
+  expensesByCategory() {
+    const map = {};
+    State.expenses.filter(e => inCurrentFY(e.date)).forEach(e => {
+      const cat = e.category || 'other';
+      map[cat] = (map[cat] || 0) + this.exGst(e.amount);
+    });
+    return Object.entries(map).map(([cat, total]) => ({ cat, total, label: catLabel(cat) }))
+      .sort((a,b) => b.total - a.total);
+  },
+
+  // BAS quarter dates
+  basQuarters(fy = State.settings.fy) {
+    const y = parseInt(fy);
+    return [
+      { q: 'Q1', period: 'Jul–Sep', due: `${y-1}-10-28`, startDate: `${y-1}-07-01`, endDate: `${y-1}-09-30` },
+      { q: 'Q2', period: 'Oct–Dec', due: `${y}-02-28`,   startDate: `${y-1}-10-01`, endDate: `${y-1}-12-31` },
+      { q: 'Q3', period: 'Jan–Mar', due: `${y}-04-28`,   startDate: `${y}-01-01`,   endDate: `${y}-03-31` },
+      { q: 'Q4', period: 'Apr–Jun', due: `${y}-07-28`,   startDate: `${y}-04-01`,   endDate: `${y}-06-30` }
+    ];
+  },
+
+  paygPaidForQuarter(q, fy = State.settings.fy) {
+    return State.paygPaid
+      .filter(p => p.fy === fy && p.quarter === q)
+      .reduce((s,p) => s + p.amount, 0);
   }
 };
 
@@ -1050,297 +1478,1225 @@ const Calc = {
 //  UI LAYER
 // ════════════════════════════════════════════════════
 const UI = {
-  _saveTimer: null,
-  _saveFlashTimer: null,
-  _toastTimer: null,
+  _saveTimer: null, _saveFlash: null, _toast: null,
 
   init() {
-    document.querySelectorAll('nav button').forEach(btn => {
-      btn.addEventListener('click', () => this.showPage(btn.dataset.page));
+    // Drawer
+    document.getElementById('btn-menu').addEventListener('click', () => this.openDrawer());
+    document.getElementById('drawer-overlay').addEventListener('click', () => this.closeDrawer());
+    document.querySelectorAll('.drawer-nav button').forEach(btn => {
+      btn.addEventListener('click', () => { this.showPage(btn.dataset.page); this.closeDrawer(); });
     });
 
-    document.getElementById('btn-add-invoice').addEventListener('click', () => this.addInvoice());
-    document.getElementById('inv-total').addEventListener('input', () => this.previewInvoice());
-    document.getElementById('inv-materials').addEventListener('input', () => this.previewInvoice());
-    document.querySelectorAll('[data-paid]').forEach(p => {
-      p.addEventListener('click', () => this.setPaid(p.dataset.paid === 'true'));
+    // Modal/lightbox close
+    document.getElementById('modal').addEventListener('click', e => {
+      if (e.target.id === 'modal') this.closeModal();
+    });
+    document.getElementById('lightbox').addEventListener('click', e => {
+      if (e.target.id === 'lightbox' || e.target.id === 'lightbox-close') {
+        document.getElementById('lightbox').classList.remove('open');
+      }
     });
 
-    document.querySelectorAll('[data-filter]').forEach(p => {
-      p.addEventListener('click', () => this.filterInvoices(p.dataset.filter));
+    // Tax Estimate persisted inputs
+    document.querySelectorAll('[data-persist]').forEach(input => {
+      input.value = State.formState[input.id] ?? '';
+      input.addEventListener('input', () => {
+        State.formState[input.id] = input.value;
+        clearTimeout(this._saveTimer);
+        this._saveTimer = setTimeout(() => State.save('formState'), 300);
+        this.renderEstimate();
+      });
     });
 
+    // Business inputs
+    document.querySelectorAll('[data-biz]').forEach(input => {
+      const key = input.id.replace('biz-', '');
+      input.value = State.business[key] ?? '';
+      input.addEventListener('input', () => {
+        State.business[key] = input.value;
+        clearTimeout(this._saveTimer);
+        this._saveTimer = setTimeout(() => {
+          State.save('business');
+          this.updateDrawerName();
+        }, 300);
+      });
+    });
+
+    // Logo upload
+    document.getElementById('logo-upload').addEventListener('click', () => document.getElementById('logo-file').click());
+    document.getElementById('logo-file').addEventListener('change', e => this.uploadLogo(e));
+    document.getElementById('btn-remove-logo').addEventListener('click', () => this.removeLogo());
+
+    // GST mode
+    document.querySelectorAll('[data-gst-mode]').forEach(p => {
+      p.addEventListener('click', () => this.setGSTMode(p.dataset.gstMode === 'on'));
+    });
+
+    // Rate mode
     document.querySelectorAll('[data-rate-mode]').forEach(p => {
       p.addEventListener('click', () => this.setRateMode(p.dataset.rateMode));
     });
     document.getElementById('rate-slider').addEventListener('input', e => {
       State.settings.manualRate = parseInt(e.target.value);
       document.getElementById('manual-rate-val').textContent = e.target.value + '%';
-      State.saveSettings();
-      this.refreshAll();
+      State.save('settings'); this.refreshAll();
     });
     document.getElementById('fy-select').addEventListener('change', e => {
       State.settings.fy = e.target.value;
-      State.saveSettings();
+      State.save('settings'); this.updateDrawerName(); this.refreshAll();
+    });
+    document.getElementById('asset-thresh-input').addEventListener('input', e => {
+      State.settings.assetThreshold = parseFloat(e.target.value) || 20000;
+      document.getElementById('asset-threshold').textContent = fmt(State.settings.assetThreshold);
+      clearTimeout(this._saveTimer);
+      this._saveTimer = setTimeout(() => { State.save('settings'); this.refreshAll(); }, 400);
     });
 
-    // persistent form fields on Tax Estimate page
-    document.querySelectorAll('[data-persist]').forEach(input => {
-      input.value = State.formState[input.id] ?? '';
-      input.addEventListener('input', () => {
-        State.formState[input.id] = input.value;
-        this._scheduleFormSave();
-        this.renderEstimate();
+    // List "New" buttons
+    document.getElementById('btn-new-invoice').addEventListener('click', () => this.openInvoiceForm());
+    document.getElementById('btn-new-quote').addEventListener('click', () => this.openQuoteForm());
+    document.getElementById('btn-new-expense').addEventListener('click', () => this.openExpenseForm());
+    document.getElementById('btn-new-mileage').addEventListener('click', () => this.openMileageForm());
+    document.getElementById('btn-new-asset').addEventListener('click', () => this.openAssetForm());
+
+    // Filters
+    document.querySelectorAll('[data-inv-filter]').forEach(p => {
+      p.addEventListener('click', () => {
+        State.ui.invFilter = p.dataset.invFilter;
+        document.querySelectorAll('[data-inv-filter]').forEach(x => x.classList.toggle('active', x === p));
+        this.renderInvoices();
+      });
+    });
+    document.querySelectorAll('[data-quote-filter]').forEach(p => {
+      p.addEventListener('click', () => {
+        State.ui.quoteFilter = p.dataset.quoteFilter;
+        document.querySelectorAll('[data-quote-filter]').forEach(x => x.classList.toggle('active', x === p));
+        this.renderQuotes();
       });
     });
 
-    document.getElementById('btn-export').addEventListener('click', () => this.exportData());
-    document.getElementById('btn-import').addEventListener('click', () => document.getElementById('import-file').click());
+    // BAS / PAYG / Setaside
+    document.getElementById('btn-add-payg').addEventListener('click', () => this.addPAYG());
+    document.getElementById('btn-add-deposit').addEventListener('click', () => this.addDeposit());
+    document.getElementById('sa-date').value = today();
+
+    // Backup
+    document.getElementById('btn-export-data').addEventListener('click', () => this.exportData());
+    document.getElementById('btn-export-photos').addEventListener('click', () => this.exportPhotos());
+    document.getElementById('btn-import-data').addEventListener('click', () => document.getElementById('import-file').click());
     document.getElementById('import-file').addEventListener('change', e => this.importData(e));
     document.getElementById('btn-clear').addEventListener('click', () => this.clearData());
 
-    document.getElementById('btn-cancel-delete').addEventListener('click', () => this.closeDeleteModal());
-    document.getElementById('btn-confirm-delete').addEventListener('click', () => this.confirmDelete());
+    // Export pack
+    document.getElementById('btn-csv-all').addEventListener('click', () => this.exportCSVPack(true));
+    document.getElementById('btn-csv-summary').addEventListener('click', () => this.exportCSVPack(false));
+    document.getElementById('btn-archive').addEventListener('click', () => this.archiveFY());
 
-    // restore settings UI
+    // Quick tiles on dashboard
+    document.querySelectorAll('.quick-tile').forEach(t => {
+      t.addEventListener('click', () => {
+        this.showPage(t.dataset.page);
+        // Auto-open the new-item form on most pages
+        setTimeout(() => {
+          if (t.dataset.page === 'invoices') this.openInvoiceForm();
+          if (t.dataset.page === 'expenses') this.openExpenseForm();
+          if (t.dataset.page === 'mileage') this.openMileageForm();
+          if (t.dataset.page === 'quotes') this.openQuoteForm();
+        }, 100);
+      });
+    });
+
+    // Initial UI state from settings
     document.getElementById('rate-slider').value = State.settings.manualRate;
     document.getElementById('manual-rate-val').textContent = State.settings.manualRate + '%';
     document.getElementById('fy-select').value = State.settings.fy;
+    document.getElementById('asset-thresh-input').value = State.settings.assetThreshold;
+    document.getElementById('asset-threshold').textContent = fmt(State.settings.assetThreshold);
     this._applyRateModeUI(State.settings.rateMode);
+    this._applyGSTModeUI(State.settings.gstMode);
+    if (State.business.logo) this._showLogo(State.business.logo);
 
-    document.getElementById('inv-date').value = new Date().toISOString().split('T')[0];
+    this.updateDrawerName();
   },
 
-  _scheduleFormSave() {
-    clearTimeout(this._saveTimer);
-    this._saveTimer = setTimeout(() => State.saveFormState(), 300);
-  },
+  openDrawer() { document.getElementById('drawer').classList.add('open'); document.getElementById('drawer-overlay').classList.add('open'); },
+  closeDrawer() { document.getElementById('drawer').classList.remove('open'); document.getElementById('drawer-overlay').classList.remove('open'); },
 
   showPage(id) {
     document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
-    document.querySelectorAll('nav button').forEach(b => b.classList.remove('active'));
+    document.querySelectorAll('.drawer-nav button').forEach(b => b.classList.remove('active'));
     document.getElementById('page-' + id).classList.add('active');
-    document.querySelector(`nav button[data-page="${id}"]`).classList.add('active');
+    document.querySelector(`.drawer-nav button[data-page="${id}"]`).classList.add('active');
     window.scrollTo(0, 0);
-    if (id === 'estimate') this.renderEstimate();
     if (id === 'dashboard') this.renderDashboard();
-    if (id === 'invoices') this.renderInvoiceList();
+    if (id === 'invoices') this.renderInvoices();
+    if (id === 'quotes') this.renderQuotes();
+    if (id === 'expenses') this.renderExpenses();
+    if (id === 'mileage') this.renderMileage();
+    if (id === 'assets') this.renderAssets();
+    if (id === 'estimate') this.renderEstimate();
+    if (id === 'bas') this.renderBAS();
+    if (id === 'setaside') this.renderSetAside();
+    if (id === 'export') this.renderSnapshots();
     if (id === 'settings') this.renderStorageStatus();
   },
 
-  setPaid(val) {
-    State.ui.invPaid = val;
-    document.querySelectorAll('[data-paid]').forEach(p => {
-      p.classList.toggle('active', (p.dataset.paid === 'true') === val);
-    });
-  },
-
-  previewInvoice() {
-    const total = parseFloat(document.getElementById('inv-total').value) || 0;
-    const mats = parseFloat(document.getElementById('inv-materials').value) || 0;
-    const preview = document.getElementById('inv-preview');
-    if (total <= 0) { preview.style.display = 'none'; return; }
-    const profit = total - mats;
-    const setAside = profit * Calc.currentRate();
-    preview.style.display = 'block';
-    document.getElementById('prev-total').textContent = Calc.fmt(total);
-    document.getElementById('prev-materials').textContent = '−' + Calc.fmt(mats);
-    document.getElementById('prev-profit').textContent = Calc.fmt(profit);
-    document.getElementById('prev-setaside').textContent = Calc.fmt(setAside);
-  },
-
-  async addInvoice() {
-    const desc = document.getElementById('inv-desc').value.trim();
-    const total = parseFloat(document.getElementById('inv-total').value);
-    const mats = parseFloat(document.getElementById('inv-materials').value) || 0;
-    const date = document.getElementById('inv-date').value;
-    if (!desc) return this.toast('Add a job description', true);
-    if (!total || total <= 0) return this.toast('Enter a valid invoice total', true);
-    if (!date) return this.toast('Select a date', true);
-    State.invoices.push({
-      id: Date.now() + Math.random(),
-      desc, total, materials: mats, date, paid: State.ui.invPaid
-    });
-    State.invoices.sort((a, b) => new Date(b.date) - new Date(a.date));
-    await State.saveInvoices();
-    document.getElementById('inv-desc').value = '';
-    document.getElementById('inv-total').value = '';
-    document.getElementById('inv-materials').value = '';
-    document.getElementById('inv-preview').style.display = 'none';
-    document.getElementById('inv-date').value = new Date().toISOString().split('T')[0];
-    this.setPaid(false);
-    this.refreshAll();
-    this.toast('Invoice added');
-    this.showPage('dashboard');
+  updateDrawerName() {
+    document.getElementById('drawer-business-name').textContent = State.business.name || 'My Business';
+    document.getElementById('drawer-fy-label').textContent = `${fyLabel(State.settings.fy)} · Sole Trader`;
   },
 
   refreshAll() {
     this.renderDashboard();
-    this.renderInvoiceList();
+    this.renderInvoices();
+    this.renderQuotes();
+    this.renderExpenses();
+    this.renderMileage();
+    this.renderAssets();
     this.renderEstimate();
+    this.renderBAS();
+    this.renderSetAside();
+    this.renderStorageStatus();
   },
 
+  // ── DASHBOARD ──────────────────────────────────
   renderDashboard() {
     const t = Calc.totals();
-    const pastGross = parseFloat(State.formState['ytd-gross']) || 0;
-    const pastMaterials = parseFloat(State.formState['ytd-materials']) || 0;
-    const hasPast = pastGross > 0 || pastMaterials > 0;
-    const rate = Calc.currentRate();
-    const ratePct = Math.round(rate * 100);
+    const rate = Math.round(Calc.currentRate() * 100);
+    const sa = Calc.setAsideStatus();
+    document.getElementById('dash-gross').textContent = fmt(t.gross);
+    document.getElementById('dash-expenses').textContent = fmt(t.totalExpenses);
+    document.getElementById('dash-profit').textContent = fmt(t.profit);
+    document.getElementById('dash-setaside').textContent = fmt(sa.target);
+    document.getElementById('dash-rate').textContent = rate;
 
-    const totalGross = t.gross + pastGross;
-    const totalMaterials = t.materials + pastMaterials;
-    const totalProfit = totalGross - totalMaterials;
-    const totalSetAside = totalProfit * rate;
+    // Overdue
+    const overdue = Calc.overdueInvoices();
+    document.getElementById('dash-overdue').textContent = overdue.length;
+    document.getElementById('dash-overdue-amt').textContent = fmt(overdue.reduce((s,i) => s + i.total, 0)) + ' owed';
 
-    document.getElementById('dash-gross').textContent = Calc.fmt(totalGross);
-    document.getElementById('dash-profit').textContent = Calc.fmt(totalProfit);
-    document.getElementById('dash-materials').textContent = Calc.fmt(totalMaterials);
-    document.getElementById('dash-count').textContent = t.count;
-    document.getElementById('dash-setaside').textContent = Calc.fmt(totalSetAside);
-    document.getElementById('dash-rate').textContent = ratePct;
-    document.getElementById('dash-rate-mode').textContent = State.settings.rateMode +
-      (hasPast ? ' · includes past totals' : '');
-    document.getElementById('gst-warning').style.display = totalGross >= 65000 ? 'block' : 'none';
+    // Saved progress
+    const progressEl = document.getElementById('dash-setaside-progress');
+    const wrapEl = document.getElementById('dash-setaside-progress-wrap');
+    const savedEl = document.getElementById('dash-setaside-saved');
+    if (sa.target > 0) {
+      const pct = Math.min(100, (sa.saved / sa.target) * 100);
+      wrapEl.style.display = 'block'; savedEl.style.display = 'block';
+      progressEl.style.width = pct + '%';
+      savedEl.textContent = `${fmt(sa.saved)} saved · ${Math.round(pct)}% of target`;
+    } else { wrapEl.style.display = 'none'; savedEl.style.display = 'none'; }
 
-    const recent = State.invoices.slice(0, 3);
-    const recentEl = document.getElementById('dash-recent');
-    if (recent.length === 0) {
-      recentEl.innerHTML = '<div class="empty">No invoices yet — tap + Invoice</div>';
-    } else {
-      recentEl.innerHTML = recent.map(inv => this.invoiceHTML(inv)).join('');
+    // GST warning
+    document.getElementById('gst-warning').style.display =
+      (t.gross >= 65000 && !State.settings.gstMode) ? 'block' : 'none';
+
+    // Due dates
+    this._renderDueSoon();
+
+    // Recent activity
+    this._renderRecent();
+  },
+
+  _renderDueSoon() {
+    const el = document.getElementById('dash-due');
+    const now = new Date();
+    const items = [];
+
+    // Next BAS
+    const quarters = Calc.basQuarters();
+    const nextBAS = quarters.find(q => new Date(q.due) >= now);
+    if (nextBAS) {
+      const days = daysBetween(today(), nextBAS.due);
+      items.push({ title: `BAS · ${nextBAS.q}`, due: `${nextBAS.due} · ${days} days`, urgent: days < 14, soon: days < 30 });
     }
-  },
 
-  filterInvoices(mode) {
-    State.ui.filterMode = mode;
-    document.querySelectorAll('[data-filter]').forEach(p => {
-      p.classList.toggle('active', p.dataset.filter === mode);
-    });
-    this.renderInvoiceList();
-  },
-
-  renderInvoiceList() {
-    document.getElementById('hist-count').textContent = State.invoices.length;
-    const filtered = State.invoices.filter(inv => {
-      if (State.ui.filterMode === 'paid') return inv.paid;
-      if (State.ui.filterMode === 'unpaid') return !inv.paid;
-      return true;
-    });
-    const el = document.getElementById('invoice-list');
-    if (filtered.length === 0) {
-      el.innerHTML = '<div class="empty">No invoices here</div>';
-      return;
+    // Tax return due
+    const fyEnd = parseInt(State.settings.fy);
+    const taxDue = `${fyEnd}-10-31`;
+    if (taxDue >= today()) {
+      const days = daysBetween(today(), taxDue);
+      if (days < 90) {
+        items.push({ title: 'Tax Return', due: `${taxDue} · ${days} days`, urgent: days < 14, soon: days < 30 });
+      }
     }
-    el.innerHTML = filtered.map(inv => this.invoiceHTML(inv, true)).join('');
-    el.querySelectorAll('[data-delete-id]').forEach(btn => {
-      btn.addEventListener('click', () => this.openDeleteModal(parseFloat(btn.dataset.deleteId)));
-    });
-  },
 
-  invoiceHTML(inv, showDelete = false) {
-    const profit = Calc.invoiceProfit(inv);
-    const setaside = Calc.invoiceSetAside(inv);
-    const safeDesc = this.escape(inv.desc);
-    return `
-      <div class="invoice-item ${inv.paid ? 'paid' : ''}">
-        <div class="inv-left">
-          <div class="inv-desc">${safeDesc}</div>
-          <div class="inv-meta">${inv.date} · ${Calc.fmt(inv.total)} inv · ${Calc.fmt(inv.materials)} mat${inv.paid ? ' · ✓ PAID' : ''}</div>
+    if (items.length === 0) { el.innerHTML = '<div class="empty">Nothing urgent</div>'; return; }
+    el.innerHTML = items.map(i => `
+      <div class="due-card ${i.urgent ? 'urgent' : i.soon ? 'soon' : 'ok'}">
+        <div class="due-card-left">
+          <h4>${escape(i.title)}</h4>
+          <div class="due-when">${escape(i.due)}</div>
         </div>
-        <div class="inv-right">
-          <div class="inv-profit">${Calc.fmt(profit)} profit</div>
-          <div class="inv-setaside">→ ${Calc.fmt(setaside)}</div>
-          ${showDelete ? `<button class="btn btn-danger" data-delete-id="${inv.id}">Remove</button>` : ''}
+        <div class="due-card-right">${i.urgent ? 'URGENT' : i.soon ? 'Soon' : ''}</div>
+      </div>
+    `).join('');
+  },
+
+  _renderRecent() {
+    const all = [
+      ...State.invoices.map(x => ({ ...x, type: 'invoice' })),
+      ...State.expenses.map(x => ({ ...x, type: 'expense' })),
+      ...State.mileage.map(x => ({ ...x, type: 'mileage' }))
+    ].filter(x => inCurrentFY(x.date))
+     .sort((a,b) => new Date(b.date) - new Date(a.date))
+     .slice(0, 5);
+    const el = document.getElementById('dash-recent');
+    if (all.length === 0) { el.innerHTML = '<div class="empty">No activity yet</div>'; return; }
+    el.innerHTML = all.map(x => {
+      if (x.type === 'invoice') return this._invoiceHTML(x, false);
+      if (x.type === 'expense') return this._expenseHTML(x, false);
+      if (x.type === 'mileage') return this._mileageHTML(x, false);
+    }).join('');
+  },
+
+  // ── INVOICES ───────────────────────────────────
+  renderInvoices() {
+    document.getElementById('inv-count').textContent = State.invoices.length;
+    let list = State.invoices;
+    if (State.ui.invFilter === 'paid') list = list.filter(i => i.paid);
+    else if (State.ui.invFilter === 'unpaid') list = list.filter(i => !i.paid);
+    else if (State.ui.invFilter === 'overdue') list = Calc.overdueInvoices();
+    list = list.sort((a,b) => new Date(b.date) - new Date(a.date));
+
+    const el = document.getElementById('invoice-list');
+    if (list.length === 0) { el.innerHTML = '<div class="empty">No invoices here</div>'; return; }
+    el.innerHTML = list.map(inv => this._invoiceHTML(inv, true)).join('');
+    el.querySelectorAll('[data-edit-id]').forEach(btn => btn.addEventListener('click', e => {
+      e.stopPropagation();
+      this.openInvoiceForm(parseFloat(btn.dataset.editId));
+    }));
+    el.querySelectorAll('.list-item[data-inv-id]').forEach(item => item.addEventListener('click', () => {
+      this.openInvoiceForm(parseFloat(item.dataset.invId));
+    }));
+  },
+
+  _invoiceHTML(inv, showEdit = false) {
+    const profit = Calc.invoiceProfit(inv);
+    const setaside = profit * Calc.currentRate();
+    const days = daysBetween(inv.date, today());
+    const overdue = !inv.paid && days > 30;
+    return `
+      <div class="list-item ${inv.paid ? 'paid' : ''}" data-inv-id="${inv.id}">
+        <div class="li-left">
+          <div class="li-title">${escape(inv.desc)}${inv.client ? ' · ' + escape(inv.client) : ''}</div>
+          <div class="li-meta">${inv.date} · ${fmt(inv.total)} inv${inv.materials ? ' · ' + fmt(inv.materials) + ' mat' : ''}${inv.paid ? ' · ✓ PAID' : overdue ? ` · ⚠ ${days}d OVERDUE` : ` · ${days}d ago`}</div>
+        </div>
+        <div class="li-right">
+          <div class="li-amount">${fmt(profit)} profit</div>
+          <div class="li-sub">→ ${fmt(setaside)}</div>
         </div>
       </div>`;
   },
 
-  escape(s) {
-    return String(s).replace(/[&<>"']/g, c => ({
-      '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;'
-    }[c]));
-  },
+  // ── INVOICE FORM ───────────────────────────────
+  openInvoiceForm(editId = null) {
+    const existing = editId ? State.invoices.find(i => i.id === editId) : null;
+    const gst = State.settings.gstMode;
+    document.getElementById('modal-body').innerHTML = `
+      <div class="modal-title">${existing ? 'Edit' : 'New'} Invoice</div>
+      <div class="form-group"><label>Description</label><input type="text" id="f-desc" placeholder="e.g. Fix fence" value="${existing ? escape(existing.desc) : ''}"></div>
+      <div class="form-group"><label>Client (optional)</label><input type="text" id="f-client" placeholder="Customer name" value="${existing ? escape(existing.client || '') : ''}"></div>
+      <div class="row2">
+        <div class="form-group">
+          <label>Total ($)${gst ? ' (incl. GST)' : ''}</label>
+          <input type="number" id="f-total" placeholder="0.00" step="0.01" inputmode="decimal" value="${existing ? existing.total : ''}">
+        </div>
+        <div class="form-group">
+          <label>Materials ($)${gst ? ' (incl. GST)' : ''}</label>
+          <input type="number" id="f-materials" placeholder="0.00" step="0.01" inputmode="decimal" value="${existing ? (existing.materials || '') : ''}">
+        </div>
+      </div>
+      <div class="form-group"><label>Date</label><input type="date" id="f-date" value="${existing ? existing.date : today()}"></div>
+      <div class="form-group"><label>Status</label>
+        <div class="pill-row">
+          <div class="pill ${existing && existing.paid ? '' : 'active'}" id="f-unpaid">Unpaid</div>
+          <div class="pill green ${existing && existing.paid ? 'active' : ''}" id="f-paid">Paid</div>
+        </div>
+      </div>
+      <div class="form-group"><label>Notes (optional)</label><textarea id="f-notes" placeholder="Job notes...">${existing ? escape(existing.notes || '') : ''}</textarea></div>
 
-  openDeleteModal(id) {
-    State.ui.deleteId = id;
-    document.getElementById('delete-modal').classList.add('open');
-  },
+      <div class="form-group"><label>Receipt Photos</label>
+        <div class="image-grid" id="f-photos"></div>
+        <button class="btn btn-secondary btn-small" id="f-add-photo" style="width:100%; margin-top:6px">📷 Add Photo</button>
+        <input type="file" id="f-photo-file" accept="image/*" capture="environment" style="display:none">
+      </div>
 
-  closeDeleteModal() {
-    document.getElementById('delete-modal').classList.remove('open');
-    State.ui.deleteId = null;
-  },
-
-  async confirmDelete() {
-    State.invoices = State.invoices.filter(i => i.id !== State.ui.deleteId);
-    await State.saveInvoices();
-    this.closeDeleteModal();
-    this.refreshAll();
-    this.toast('Invoice removed');
-  },
-
-  renderEstimate() {
-    const e = Calc.estimate();
-    const sourceLabel = e.hasPast
-      ? `${Calc.fmt(e.pastGross)} past + ${Calc.fmt(e.loggedGross)} from ${e.invCount} logged`
-      : `From ${e.invCount} logged invoice${e.invCount !== 1 ? 's' : ''}`;
-    const matsLabel = e.hasPast
-      ? `${Calc.fmt(e.pastMaterials)} past + ${Calc.fmt(e.loggedMaterials)} logged${e.otherDeductions > 0 ? ` + ${Calc.fmt(e.otherDeductions)} other` : ''}`
-      : (e.otherDeductions > 0 ? `${Calc.fmt(e.loggedMaterials)} materials + ${Calc.fmt(e.otherDeductions)} other` : 'From logged invoices');
-
-    document.getElementById('estimate-breakdown').innerHTML = `
-      <div class="breakdown-row">
-        <span class="bd-label">PAYG Wages</span>
-        <span class="bd-val">${Calc.fmt(e.paygIncome)}</span>
-      </div>
-      <div class="breakdown-row">
-        <span class="bd-label">Business Gross<small>${sourceLabel}</small></span>
-        <span class="bd-val">${Calc.fmt(e.bizGross)}</span>
-      </div>
-      <div class="breakdown-row">
-        <span class="bd-label">Materials &amp; Deductions<small>${matsLabel}</small></span>
-        <span class="bd-val">−${Calc.fmt(e.bizMaterials + e.otherDeductions)}</span>
-      </div>
-      <div class="breakdown-row">
-        <span class="bd-label">Business Profit</span>
-        <span class="bd-val">${Calc.fmt(e.bizProfit)}</span>
-      </div>
-      <div class="breakdown-row total">
-        <span class="bd-label">Total Taxable Income</span>
-        <span class="bd-val">${Calc.fmt(e.totalIncome)}</span>
-      </div>
-      <div class="breakdown-row">
-        <span class="bd-label">Estimated Tax + Medicare</span>
-        <span class="bd-val">${Calc.fmt(e.taxOwed)}</span>
-      </div>
-      <div class="breakdown-row positive">
-        <span class="bd-label">Credits (withheld + extra)</span>
-        <span class="bd-val">−${Calc.fmt(e.totalCredits)}</span>
+      <div class="btn-row" style="margin-top:14px">
+        ${existing ? '<button class="btn btn-danger" id="f-delete">Delete</button>' : ''}
+        <button class="btn btn-secondary" id="f-cancel">Cancel</button>
+        <button class="btn btn-primary" id="f-save">${existing ? 'Save' : 'Add'}</button>
       </div>
     `;
+    this._showModal();
+    let isPaid = existing ? !!existing.paid : false;
+    let photos = existing && existing.photos ? [...existing.photos] : [];
 
-    const box = document.getElementById('est-result-box');
-    const label = document.getElementById('est-result-label');
-    const amount = document.getElementById('est-still-owed');
-    const sub = document.getElementById('est-sub');
-    if (e.refund > 0) {
-      box.classList.add('green');
-      label.textContent = 'Estimated refund';
-      amount.textContent = Calc.fmt(e.refund);
-      sub.textContent = 'Credits exceed estimated tax';
-    } else {
-      box.classList.remove('green');
-      label.textContent = 'Estimated tax still owed';
-      amount.textContent = Calc.fmt(e.stillOwed);
-      sub.textContent = 'After withholding credits';
+    const renderPhotos = async () => {
+      const grid = document.getElementById('f-photos');
+      grid.innerHTML = '';
+      for (const pid of photos) {
+        const data = await Storage.getPhoto(pid);
+        if (!data) continue;
+        const div = document.createElement('div');
+        div.className = 'image-thumb';
+        div.innerHTML = `<img src="${data}"><div class="rm">×</div>`;
+        div.querySelector('img').addEventListener('click', () => this.showLightbox(data));
+        div.querySelector('.rm').addEventListener('click', e => {
+          e.stopPropagation();
+          photos = photos.filter(x => x !== pid);
+          Storage.deletePhoto(pid);
+          renderPhotos();
+        });
+        grid.appendChild(div);
+      }
+    };
+    renderPhotos();
+
+    document.getElementById('f-paid').addEventListener('click', () => {
+      isPaid = true;
+      document.getElementById('f-paid').classList.add('active');
+      document.getElementById('f-unpaid').classList.remove('active');
+    });
+    document.getElementById('f-unpaid').addEventListener('click', () => {
+      isPaid = false;
+      document.getElementById('f-unpaid').classList.add('active');
+      document.getElementById('f-paid').classList.remove('active');
+    });
+
+    document.getElementById('f-add-photo').addEventListener('click', () => document.getElementById('f-photo-file').click());
+    document.getElementById('f-photo-file').addEventListener('change', async e => {
+      const file = e.target.files[0]; if (!file) return;
+      this.toast('Compressing photo...');
+      const data = await compressImage(file);
+      const pid = newId();
+      await Storage.setPhoto(pid, data);
+      photos.push(pid);
+      renderPhotos();
+      e.target.value = '';
+    });
+
+    document.getElementById('f-cancel').addEventListener('click', () => this.closeModal());
+    document.getElementById('f-save').addEventListener('click', async () => {
+      const desc = document.getElementById('f-desc').value.trim();
+      const client = document.getElementById('f-client').value.trim();
+      const total = parseFloat(document.getElementById('f-total').value);
+      const materials = parseFloat(document.getElementById('f-materials').value) || 0;
+      const date = document.getElementById('f-date').value;
+      const notes = document.getElementById('f-notes').value.trim();
+      if (!desc) return this.toast('Description required', true);
+      if (!total || total <= 0) return this.toast('Total required', true);
+      if (!date) return this.toast('Date required', true);
+
+      if (existing) {
+        Object.assign(existing, { desc, client, total, materials, date, paid: isPaid, notes, photos });
+      } else {
+        State.invoices.push({ id: newId(), desc, client, total, materials, date, paid: isPaid, notes, photos });
+      }
+      State.invoices.sort((a,b) => new Date(b.date) - new Date(a.date));
+      await State.save('invoices');
+      this.closeModal(); this.refreshAll();
+      this.toast(existing ? 'Invoice updated' : 'Invoice added');
+    });
+
+    if (existing) {
+      document.getElementById('f-delete').addEventListener('click', async () => {
+        if (!confirm('Delete this invoice?')) return;
+        for (const pid of (existing.photos || [])) await Storage.deletePhoto(pid);
+        State.invoices = State.invoices.filter(i => i.id !== editId);
+        await State.save('invoices');
+        this.closeModal(); this.refreshAll();
+        this.toast('Invoice deleted');
+      });
     }
   },
 
-  _applyRateModeUI(mode) {
-    document.querySelectorAll('[data-rate-mode]').forEach(p => {
-      p.classList.toggle('active', p.dataset.rateMode === mode);
+  // ── EXPENSES ───────────────────────────────────
+  renderExpenses() {
+    document.getElementById('exp-count').textContent = State.expenses.length;
+    const t = Calc.totals();
+    document.getElementById('exp-total').textContent = fmt(t.expenseTotal);
+    const monthStart = new Date(); monthStart.setDate(1);
+    const monthTotal = State.expenses
+      .filter(e => new Date(e.date) >= monthStart && inCurrentFY(e.date))
+      .reduce((s,e) => s + Calc.exGst(e.amount), 0);
+    document.getElementById('exp-month').textContent = fmt(monthTotal);
+
+    // By category
+    const byCat = Calc.expensesByCategory();
+    const catEl = document.getElementById('exp-by-cat');
+    if (byCat.length === 0) {
+      catEl.innerHTML = '<div class="empty" style="padding:16px">No expenses yet</div>';
+    } else {
+      const max = Math.max(...byCat.map(c => c.total));
+      catEl.innerHTML = byCat.map(c => `
+        <div style="margin-bottom:8px">
+          <div style="display:flex; justify-content:space-between; font-size:13px; margin-bottom:3px;">
+            <span>${escape(c.label)}</span>
+            <span style="font-family:var(--font-mono)">${fmt(c.total)}</span>
+          </div>
+          <div style="height:5px; background:var(--surface2); border-radius:2px; overflow:hidden">
+            <div style="height:100%; width:${(c.total/max)*100}%; background:var(--blue);"></div>
+          </div>
+        </div>
+      `).join('');
+    }
+
+    // Category chips
+    const chipEl = document.getElementById('exp-cat-chips');
+    chipEl.innerHTML = `<div class="chip ${State.ui.expCatFilter === 'all' ? 'active' : ''}" data-exp-cat="all">All</div>` +
+      EXPENSE_CATEGORIES.map(c => `<div class="chip ${State.ui.expCatFilter === c.id ? 'active' : ''}" data-exp-cat="${c.id}">${escape(c.label)}</div>`).join('');
+    chipEl.querySelectorAll('[data-exp-cat]').forEach(c => c.addEventListener('click', () => {
+      State.ui.expCatFilter = c.dataset.expCat;
+      this.renderExpenses();
+    }));
+
+    // List
+    let list = State.expenses.filter(e => inCurrentFY(e.date));
+    if (State.ui.expCatFilter !== 'all') list = list.filter(e => (e.category || 'other') === State.ui.expCatFilter);
+    list.sort((a,b) => new Date(b.date) - new Date(a.date));
+    const lEl = document.getElementById('expense-list');
+    if (list.length === 0) { lEl.innerHTML = '<div class="empty">No expenses</div>'; return; }
+    lEl.innerHTML = list.map(e => this._expenseHTML(e, true)).join('');
+    lEl.querySelectorAll('.list-item[data-exp-id]').forEach(item =>
+      item.addEventListener('click', () => this.openExpenseForm(parseFloat(item.dataset.expId)))
+    );
+  },
+
+  _expenseHTML(exp) {
+    return `
+      <div class="list-item expense" data-exp-id="${exp.id}">
+        <div class="li-left">
+          <div class="li-title">${escape(exp.desc)}</div>
+          <div class="li-meta">${exp.date} · ${catLabel(exp.category)}${exp.supplier ? ' · ' + escape(exp.supplier) : ''}</div>
+        </div>
+        <div class="li-right">
+          <div class="li-amount">${fmt(exp.amount)}</div>
+          ${exp.photos && exp.photos.length ? `<div class="li-sub">📷 ${exp.photos.length}</div>` : ''}
+        </div>
+      </div>`;
+  },
+
+  openExpenseForm(editId = null) {
+    const existing = editId ? State.expenses.find(e => e.id === editId) : null;
+    const gst = State.settings.gstMode;
+    document.getElementById('modal-body').innerHTML = `
+      <div class="modal-title">${existing ? 'Edit' : 'New'} Expense</div>
+      <div class="form-group"><label>Description</label><input type="text" id="f-desc" placeholder="e.g. Drill bits from Bunnings" value="${existing ? escape(existing.desc) : ''}"></div>
+      <div class="form-group"><label>Category</label><select id="f-cat">${
+        EXPENSE_CATEGORIES.map(c => `<option value="${c.id}" ${existing && existing.category === c.id ? 'selected' : ''}>${escape(c.label)}</option>`).join('')
+      }</select></div>
+      <div class="row2">
+        <div class="form-group">
+          <label>Amount ($)${gst ? ' (incl. GST)' : ''}</label>
+          <input type="number" id="f-amount" placeholder="0.00" step="0.01" inputmode="decimal" value="${existing ? existing.amount : ''}">
+        </div>
+        <div class="form-group"><label>Date</label><input type="date" id="f-date" value="${existing ? existing.date : today()}"></div>
+      </div>
+      <div class="form-group"><label>Supplier (optional)</label><input type="text" id="f-supplier" placeholder="e.g. Bunnings" value="${existing ? escape(existing.supplier || '') : ''}"></div>
+      ${gst ? `<div class="form-group"><label>GST claimable?</label>
+        <div class="pill-row">
+          <div class="pill ${existing && existing.gstClaimable === false ? '' : 'active'}" id="f-gst-yes">Yes</div>
+          <div class="pill ${existing && existing.gstClaimable === false ? 'active' : ''}" id="f-gst-no">No</div>
+        </div></div>` : ''}
+      <div class="form-group"><label>Notes</label><textarea id="f-notes">${existing ? escape(existing.notes || '') : ''}</textarea></div>
+      <div class="form-group"><label>Receipt Photos</label>
+        <div class="image-grid" id="f-photos"></div>
+        <button class="btn btn-secondary btn-small" id="f-add-photo" style="width:100%; margin-top:6px">📷 Add Photo</button>
+        <input type="file" id="f-photo-file" accept="image/*" capture="environment" style="display:none">
+      </div>
+      <div class="btn-row" style="margin-top:14px">
+        ${existing ? '<button class="btn btn-danger" id="f-delete">Delete</button>' : ''}
+        <button class="btn btn-secondary" id="f-cancel">Cancel</button>
+        <button class="btn btn-primary" id="f-save">${existing ? 'Save' : 'Add'}</button>
+      </div>
+    `;
+    this._showModal();
+    let gstClaimable = existing ? existing.gstClaimable !== false : true;
+    let photos = existing && existing.photos ? [...existing.photos] : [];
+
+    const renderPhotos = async () => {
+      const grid = document.getElementById('f-photos');
+      grid.innerHTML = '';
+      for (const pid of photos) {
+        const data = await Storage.getPhoto(pid);
+        if (!data) continue;
+        const div = document.createElement('div');
+        div.className = 'image-thumb';
+        div.innerHTML = `<img src="${data}"><div class="rm">×</div>`;
+        div.querySelector('img').addEventListener('click', () => this.showLightbox(data));
+        div.querySelector('.rm').addEventListener('click', e => {
+          e.stopPropagation();
+          photos = photos.filter(x => x !== pid);
+          Storage.deletePhoto(pid);
+          renderPhotos();
+        });
+        grid.appendChild(div);
+      }
+    };
+    renderPhotos();
+
+    if (gst) {
+      document.getElementById('f-gst-yes').addEventListener('click', () => {
+        gstClaimable = true;
+        document.getElementById('f-gst-yes').classList.add('active');
+        document.getElementById('f-gst-no').classList.remove('active');
+      });
+      document.getElementById('f-gst-no').addEventListener('click', () => {
+        gstClaimable = false;
+        document.getElementById('f-gst-no').classList.add('active');
+        document.getElementById('f-gst-yes').classList.remove('active');
+      });
+    }
+
+    document.getElementById('f-add-photo').addEventListener('click', () => document.getElementById('f-photo-file').click());
+    document.getElementById('f-photo-file').addEventListener('change', async e => {
+      const file = e.target.files[0]; if (!file) return;
+      this.toast('Compressing photo...');
+      const data = await compressImage(file);
+      const pid = newId();
+      await Storage.setPhoto(pid, data);
+      photos.push(pid);
+      renderPhotos();
+      e.target.value = '';
     });
+
+    document.getElementById('f-cancel').addEventListener('click', () => this.closeModal());
+    document.getElementById('f-save').addEventListener('click', async () => {
+      const desc = document.getElementById('f-desc').value.trim();
+      const cat = document.getElementById('f-cat').value;
+      const amount = parseFloat(document.getElementById('f-amount').value);
+      const date = document.getElementById('f-date').value;
+      const supplier = document.getElementById('f-supplier').value.trim();
+      const notes = document.getElementById('f-notes').value.trim();
+      if (!desc) return this.toast('Description required', true);
+      if (!amount || amount <= 0) return this.toast('Amount required', true);
+      if (!date) return this.toast('Date required', true);
+      const data = { desc, category: cat, amount, date, supplier, notes, gstClaimable, photos };
+      if (existing) Object.assign(existing, data);
+      else State.expenses.push({ id: newId(), ...data });
+      State.expenses.sort((a,b) => new Date(b.date) - new Date(a.date));
+      await State.save('expenses');
+      this.closeModal(); this.refreshAll();
+      this.toast(existing ? 'Expense updated' : 'Expense added');
+    });
+
+    if (existing) {
+      document.getElementById('f-delete').addEventListener('click', async () => {
+        if (!confirm('Delete this expense?')) return;
+        for (const pid of (existing.photos || [])) await Storage.deletePhoto(pid);
+        State.expenses = State.expenses.filter(e => e.id !== editId);
+        await State.save('expenses');
+        this.closeModal(); this.refreshAll();
+        this.toast('Expense deleted');
+      });
+    }
+  },
+
+  // ── MILEAGE ────────────────────────────────────
+  renderMileage() {
+    document.getElementById('mil-count').textContent = State.mileage.filter(m => inCurrentFY(m.date)).length;
+    const t = Calc.totals();
+    document.getElementById('mil-total').textContent = fmtInt(t.milKm);
+    document.getElementById('mil-deduction').textContent = fmt(t.milDeduction);
+    if (t.milKm > 5000) {
+      document.getElementById('mil-deduction-sub').textContent = `${fmtInt(t.milKm)}km logged, capped at 5,000km`;
+    } else {
+      document.getElementById('mil-deduction-sub').textContent = `Capped at 5,000km · ${5000 - t.milKm}km remaining`;
+    }
+    const list = State.mileage.filter(m => inCurrentFY(m.date)).sort((a,b) => new Date(b.date) - new Date(a.date));
+    const el = document.getElementById('mileage-list');
+    if (list.length === 0) { el.innerHTML = '<div class="empty">No trips logged</div>'; return; }
+    el.innerHTML = list.map(m => this._mileageHTML(m, true)).join('');
+    el.querySelectorAll('.list-item[data-mil-id]').forEach(item =>
+      item.addEventListener('click', () => this.openMileageForm(parseFloat(item.dataset.milId)))
+    );
+  },
+
+  _mileageHTML(m) {
+    return `
+      <div class="list-item mileage" data-mil-id="${m.id}">
+        <div class="li-left">
+          <div class="li-title">${escape(m.purpose)}</div>
+          <div class="li-meta">${m.date}${m.from ? ' · ' + escape(m.from) + ' → ' + escape(m.to || '') : ''}</div>
+        </div>
+        <div class="li-right">
+          <div class="li-amount">${fmtInt(m.km)} km</div>
+          <div class="li-sub">→ ${fmt((m.km || 0) * 0.88)}</div>
+        </div>
+      </div>`;
+  },
+
+  openMileageForm(editId = null) {
+    const existing = editId ? State.mileage.find(m => m.id === editId) : null;
+    document.getElementById('modal-body').innerHTML = `
+      <div class="modal-title">${existing ? 'Edit' : 'New'} Trip</div>
+      <div class="form-group"><label>Purpose</label><input type="text" id="f-purpose" placeholder="e.g. Bunnings then job at Smith St" value="${existing ? escape(existing.purpose) : ''}"></div>
+      <div class="row2">
+        <div class="form-group"><label>From</label><input type="text" id="f-from" placeholder="Start" value="${existing ? escape(existing.from || '') : ''}"></div>
+        <div class="form-group"><label>To</label><input type="text" id="f-to" placeholder="End" value="${existing ? escape(existing.to || '') : ''}"></div>
+      </div>
+      <div class="row2">
+        <div class="form-group"><label>Date</label><input type="date" id="f-date" value="${existing ? existing.date : today()}"></div>
+        <div class="form-group"><label>Kilometres</label><input type="number" id="f-km" placeholder="0" inputmode="decimal" value="${existing ? existing.km : ''}"></div>
+      </div>
+      <div class="btn-row" style="margin-top:14px">
+        ${existing ? '<button class="btn btn-danger" id="f-delete">Delete</button>' : ''}
+        <button class="btn btn-secondary" id="f-cancel">Cancel</button>
+        <button class="btn btn-primary" id="f-save">${existing ? 'Save' : 'Add'}</button>
+      </div>
+    `;
+    this._showModal();
+    document.getElementById('f-cancel').addEventListener('click', () => this.closeModal());
+    document.getElementById('f-save').addEventListener('click', async () => {
+      const purpose = document.getElementById('f-purpose').value.trim();
+      const from = document.getElementById('f-from').value.trim();
+      const to = document.getElementById('f-to').value.trim();
+      const date = document.getElementById('f-date').value;
+      const km = parseFloat(document.getElementById('f-km').value);
+      if (!purpose) return this.toast('Purpose required', true);
+      if (!km || km <= 0) return this.toast('km required', true);
+      if (!date) return this.toast('Date required', true);
+      const data = { purpose, from, to, date, km };
+      if (existing) Object.assign(existing, data);
+      else State.mileage.push({ id: newId(), ...data });
+      await State.save('mileage');
+      this.closeModal(); this.refreshAll();
+      this.toast(existing ? 'Trip updated' : 'Trip logged');
+    });
+    if (existing) {
+      document.getElementById('f-delete').addEventListener('click', async () => {
+        if (!confirm('Delete this trip?')) return;
+        State.mileage = State.mileage.filter(m => m.id !== editId);
+        await State.save('mileage');
+        this.closeModal(); this.refreshAll();
+      });
+    }
+  },
+
+  // ── ASSETS ─────────────────────────────────────
+  renderAssets() {
+    const ast = State.assets.filter(a => inCurrentFY(a.date));
+    document.getElementById('asset-count').textContent = ast.length;
+    const t = Calc.totals();
+    document.getElementById('asset-writeoff').textContent = fmt(t.assetWriteoff);
+    document.getElementById('asset-pool').textContent = fmt(t.poolNewThisYear);
+    document.getElementById('asset-pool-dep').textContent = fmt(t.poolDepNewYear) + ' deductible this FY (15%)';
+    ast.sort((a,b) => new Date(b.date) - new Date(a.date));
+    const el = document.getElementById('asset-list');
+    if (ast.length === 0) { el.innerHTML = '<div class="empty">No assets logged</div>'; return; }
+    el.innerHTML = ast.map(a => {
+      const isWriteoff = a.amount <= State.settings.assetThreshold;
+      return `
+        <div class="list-item ${isWriteoff ? 'green-marker' : ''}" data-asset-id="${a.id}">
+          <div class="li-left">
+            <div class="li-title">${escape(a.desc)}</div>
+            <div class="li-meta">${a.date}${a.supplier ? ' · ' + escape(a.supplier) : ''} · ${isWriteoff ? 'Instant write-off' : 'Pool (15% Y1)'}</div>
+          </div>
+          <div class="li-right">
+            <div class="li-amount">${fmt(a.amount)}</div>
+            <div class="li-sub green">→ ${fmt(isWriteoff ? Calc.exGst(a.amount) : Calc.exGst(a.amount) * 0.15)}</div>
+          </div>
+        </div>`;
+    }).join('');
+    el.querySelectorAll('.list-item[data-asset-id]').forEach(item =>
+      item.addEventListener('click', () => this.openAssetForm(parseFloat(item.dataset.assetId)))
+    );
+  },
+
+  openAssetForm(editId = null) {
+    const existing = editId ? State.assets.find(a => a.id === editId) : null;
+    document.getElementById('modal-body').innerHTML = `
+      <div class="modal-title">${existing ? 'Edit' : 'New'} Asset</div>
+      <div class="form-group"><label>Description</label><input type="text" id="f-desc" placeholder="e.g. Cordless drill kit" value="${existing ? escape(existing.desc) : ''}"></div>
+      <div class="row2">
+        <div class="form-group"><label>Amount ($)</label><input type="number" id="f-amount" placeholder="0.00" step="0.01" inputmode="decimal" value="${existing ? existing.amount : ''}"></div>
+        <div class="form-group"><label>Date Purchased</label><input type="date" id="f-date" value="${existing ? existing.date : today()}"></div>
+      </div>
+      <div class="form-group"><label>Supplier (optional)</label><input type="text" id="f-supplier" value="${existing ? escape(existing.supplier || '') : ''}"></div>
+      <div class="form-group"><label>Notes</label><textarea id="f-notes">${existing ? escape(existing.notes || '') : ''}</textarea></div>
+      <div class="btn-row" style="margin-top:14px">
+        ${existing ? '<button class="btn btn-danger" id="f-delete">Delete</button>' : ''}
+        <button class="btn btn-secondary" id="f-cancel">Cancel</button>
+        <button class="btn btn-primary" id="f-save">${existing ? 'Save' : 'Add'}</button>
+      </div>
+    `;
+    this._showModal();
+    document.getElementById('f-cancel').addEventListener('click', () => this.closeModal());
+    document.getElementById('f-save').addEventListener('click', async () => {
+      const desc = document.getElementById('f-desc').value.trim();
+      const amount = parseFloat(document.getElementById('f-amount').value);
+      const date = document.getElementById('f-date').value;
+      const supplier = document.getElementById('f-supplier').value.trim();
+      const notes = document.getElementById('f-notes').value.trim();
+      if (!desc) return this.toast('Description required', true);
+      if (!amount || amount <= 0) return this.toast('Amount required', true);
+      const data = { desc, amount, date, supplier, notes };
+      if (existing) Object.assign(existing, data);
+      else State.assets.push({ id: newId(), ...data });
+      await State.save('assets');
+      this.closeModal(); this.refreshAll();
+    });
+    if (existing) {
+      document.getElementById('f-delete').addEventListener('click', async () => {
+        if (!confirm('Delete this asset?')) return;
+        State.assets = State.assets.filter(a => a.id !== editId);
+        await State.save('assets');
+        this.closeModal(); this.refreshAll();
+      });
+    }
+  },
+
+  // ── QUOTES ─────────────────────────────────────
+  renderQuotes() {
+    document.getElementById('quote-count').textContent = State.quotes.length;
+    let list = State.quotes;
+    if (State.ui.quoteFilter !== 'all') list = list.filter(q => q.status === State.ui.quoteFilter);
+    list = [...list].sort((a,b) => new Date(b.date) - new Date(a.date));
+    const el = document.getElementById('quote-list');
+    if (list.length === 0) { el.innerHTML = '<div class="empty">No quotes here</div>'; return; }
+    el.innerHTML = list.map(q => {
+      const total = (q.lineItems || []).reduce((s,li) => s + (li.qty * li.rate), 0);
+      const statusBadge = q.status === 'accepted' ? '✓ Accepted' : q.status === 'declined' ? '✗ Declined' : 'Sent';
+      return `
+        <div class="list-item quote ${q.status || ''}" data-quote-id="${q.id}">
+          <div class="li-left">
+            <div class="li-title">${escape(q.title || 'Quote')}${q.client ? ' · ' + escape(q.client) : ''}</div>
+            <div class="li-meta">${q.date} · Quote #${escape(q.number || '')} · ${statusBadge}</div>
+          </div>
+          <div class="li-right">
+            <div class="li-amount">${fmt(total)}</div>
+          </div>
+        </div>`;
+    }).join('');
+    el.querySelectorAll('.list-item[data-quote-id]').forEach(item =>
+      item.addEventListener('click', () => this.openQuoteForm(parseFloat(item.dataset.quoteId)))
+    );
+  },
+
+  openQuoteForm(editId = null) {
+    const existing = editId ? State.quotes.find(q => q.id === editId) : null;
+    const nextNumber = String(State.quotes.length + 1).padStart(4, '0');
+    document.getElementById('modal-body').innerHTML = `
+      <div class="modal-title">${existing ? 'Edit' : 'New'} Quote</div>
+      <div class="row2">
+        <div class="form-group"><label>Quote #</label><input type="text" id="f-number" value="${existing ? escape(existing.number) : nextNumber}"></div>
+        <div class="form-group"><label>Date</label><input type="date" id="f-date" value="${existing ? existing.date : today()}"></div>
+      </div>
+      <div class="form-group"><label>Title</label><input type="text" id="f-title" placeholder="e.g. Fence Repair Quote" value="${existing ? escape(existing.title || '') : ''}"></div>
+      <div class="form-group"><label>Client Name</label><input type="text" id="f-client" value="${existing ? escape(existing.client || '') : ''}"></div>
+      <div class="form-group"><label>Client Address (optional)</label><textarea id="f-client-addr">${existing ? escape(existing.clientAddress || '') : ''}</textarea></div>
+      <div class="form-group"><label>Valid Until</label><input type="date" id="f-valid" value="${existing ? (existing.validUntil || '') : ''}"></div>
+
+      <div class="section-header">Line Items</div>
+      <div id="line-items-list"></div>
+      <button class="btn btn-secondary btn-small" id="f-add-line" style="width:100%; margin-bottom:10px">+ Add Line Item</button>
+
+      <div class="form-group"><label>Notes (terms, payment instructions, etc.)</label>
+        <textarea id="f-notes" placeholder="e.g. Quote valid for 30 days. 50% deposit required.">${existing ? escape(existing.notes || '') : ''}</textarea>
+      </div>
+      <div class="form-group"><label>Status</label>
+        <div class="pill-row">
+          <div class="pill ${!existing || existing.status === 'sent' ? 'active' : ''}" data-status="sent">Sent</div>
+          <div class="pill green ${existing && existing.status === 'accepted' ? 'active' : ''}" data-status="accepted">Accepted</div>
+          <div class="pill red ${existing && existing.status === 'declined' ? 'active' : ''}" data-status="declined">Declined</div>
+        </div>
+      </div>
+
+      <div class="btn-row" style="margin-bottom:8px">
+        <button class="btn btn-secondary" id="f-preview">👁 Preview</button>
+        <button class="btn btn-primary" id="f-pdf">📄 Open as PDF</button>
+      </div>
+      <div class="btn-row">
+        ${existing ? '<button class="btn btn-danger" id="f-delete">Delete</button>' : ''}
+        <button class="btn btn-secondary" id="f-cancel">Cancel</button>
+        <button class="btn btn-primary" id="f-save">${existing ? 'Save' : 'Add'}</button>
+      </div>
+    `;
+    this._showModal();
+    let lineItems = existing ? [...existing.lineItems] : [{ desc: '', qty: 1, rate: 0 }];
+    let status = existing ? (existing.status || 'sent') : 'sent';
+
+    const renderLines = () => {
+      const c = document.getElementById('line-items-list');
+      c.innerHTML = lineItems.map((li, idx) => `
+        <div class="line-item">
+          <div class="line-item-header">
+            <span class="label">Item ${idx+1}</span>
+            ${lineItems.length > 1 ? `<button class="btn-danger btn-small" data-rm="${idx}">✕</button>` : ''}
+          </div>
+          <input type="text" placeholder="Description" data-li-desc="${idx}" value="${escape(li.desc)}" style="margin-bottom:6px">
+          <div class="row2">
+            <input type="number" placeholder="Qty" step="0.01" inputmode="decimal" data-li-qty="${idx}" value="${li.qty}">
+            <input type="number" placeholder="Rate ($)" step="0.01" inputmode="decimal" data-li-rate="${idx}" value="${li.rate}">
+          </div>
+          <div style="text-align:right; font-family:var(--font-mono); font-size:13px; margin-top:6px; color:var(--accent)">${fmt(li.qty * li.rate)}</div>
+        </div>
+      `).join('');
+
+      c.querySelectorAll('[data-li-desc]').forEach(i => i.addEventListener('input', e => {
+        lineItems[parseInt(e.target.dataset.liDesc)].desc = e.target.value;
+      }));
+      c.querySelectorAll('[data-li-qty]').forEach(i => i.addEventListener('input', e => {
+        lineItems[parseInt(e.target.dataset.liQty)].qty = parseFloat(e.target.value) || 0;
+        renderLines();
+      }));
+      c.querySelectorAll('[data-li-rate]').forEach(i => i.addEventListener('input', e => {
+        lineItems[parseInt(e.target.dataset.liRate)].rate = parseFloat(e.target.value) || 0;
+        renderLines();
+      }));
+      c.querySelectorAll('[data-rm]').forEach(b => b.addEventListener('click', () => {
+        lineItems.splice(parseInt(b.dataset.rm), 1);
+        renderLines();
+      }));
+    };
+    renderLines();
+
+    document.getElementById('f-add-line').addEventListener('click', () => {
+      lineItems.push({ desc: '', qty: 1, rate: 0 });
+      renderLines();
+    });
+
+    document.querySelectorAll('[data-status]').forEach(p => p.addEventListener('click', () => {
+      status = p.dataset.status;
+      document.querySelectorAll('[data-status]').forEach(x => x.classList.toggle('active', x === p));
+    }));
+
+    document.getElementById('f-preview').addEventListener('click', () => {
+      this._showQuotePreviewModal(this._buildQuoteData(existing, lineItems, status, nextNumber));
+    });
+
+    document.getElementById('f-pdf').addEventListener('click', () => {
+      const data = this._buildQuoteData(existing, lineItems, status, nextNumber);
+      this._openQuoteAsPDF(data);
+    });
+
+    document.getElementById('f-cancel').addEventListener('click', () => this.closeModal());
+    document.getElementById('f-save').addEventListener('click', async () => {
+      const data = this._buildQuoteData(existing, lineItems, status, nextNumber);
+      if (!data.title) return this.toast('Title required', true);
+      if (existing) Object.assign(existing, data);
+      else State.quotes.push({ id: newId(), ...data });
+      await State.save('quotes');
+      this.closeModal(); this.refreshAll();
+      this.toast(existing ? 'Quote updated' : 'Quote added');
+    });
+    if (existing) {
+      document.getElementById('f-delete').addEventListener('click', async () => {
+        if (!confirm('Delete this quote?')) return;
+        State.quotes = State.quotes.filter(q => q.id !== editId);
+        await State.save('quotes');
+        this.closeModal(); this.refreshAll();
+      });
+    }
+  },
+
+  _buildQuoteData(existing, lineItems, status, nextNumber) {
+    return {
+      number: document.getElementById('f-number').value.trim() || nextNumber,
+      title: document.getElementById('f-title').value.trim(),
+      client: document.getElementById('f-client').value.trim(),
+      clientAddress: document.getElementById('f-client-addr').value.trim(),
+      date: document.getElementById('f-date').value || today(),
+      validUntil: document.getElementById('f-valid').value || '',
+      lineItems: lineItems.filter(li => li.desc || li.qty || li.rate),
+      notes: document.getElementById('f-notes').value.trim(),
+      status
+    };
+  },
+
+  _showQuotePreviewModal(q) {
+    const subtotal = q.lineItems.reduce((s,li) => s + (li.qty * li.rate), 0);
+    const gst = State.settings.gstMode ? subtotal * 0.1 : 0;
+    const total = subtotal + gst;
+    const biz = State.business;
+    document.getElementById('modal-body').innerHTML = `
+      <div class="modal-title">Quote Preview</div>
+      <div class="quote-preview">
+        <div class="qp-header">
+          ${biz.logo ? `<img src="${biz.logo}" class="qp-logo">` : '<div></div>'}
+          <div class="qp-business">
+            <strong>${escape(biz.name || 'Your Business')}</strong>
+            ${biz.abn ? `ABN: ${escape(biz.abn)}<br>` : ''}
+            ${biz.address ? escape(biz.address).replace(/\n/g, '<br>') + '<br>' : ''}
+            ${biz.phone ? escape(biz.phone) + '<br>' : ''}
+            ${biz.email ? escape(biz.email) : ''}
+          </div>
+        </div>
+        <h2>Quote</h2>
+        <div class="qp-meta">
+          <div>
+            <strong>Quote To</strong>
+            ${escape(q.client || '—')}
+            ${q.clientAddress ? '<br>' + escape(q.clientAddress).replace(/\n/g, '<br>') : ''}
+          </div>
+          <div>
+            <strong>Quote Details</strong>
+            #${escape(q.number)}<br>
+            Date: ${q.date}
+            ${q.validUntil ? '<br>Valid until: ' + q.validUntil : ''}
+          </div>
+        </div>
+        <table>
+          <thead><tr><th>Description</th><th class="r">Qty</th><th class="r">Rate</th><th class="r">Amount</th></tr></thead>
+          <tbody>
+            ${q.lineItems.map(li => `<tr><td>${escape(li.desc)}</td><td class="r">${li.qty}</td><td class="r">${fmt(li.rate)}</td><td class="r">${fmt(li.qty * li.rate)}</td></tr>`).join('')}
+          </tbody>
+        </table>
+        <table class="qp-totals">
+          <tr><td>Subtotal</td><td class="r">${fmt(subtotal)}</td></tr>
+          ${State.settings.gstMode ? `<tr><td>GST (10%)</td><td class="r">${fmt(gst)}</td></tr>` : ''}
+          <tr class="tot"><td>Total</td><td class="r">${fmt(total)}</td></tr>
+        </table>
+        ${q.notes ? `<div class="qp-notes">${escape(q.notes)}</div>` : ''}
+        ${biz.bank ? `<div class="qp-notes"><strong>Payment:</strong><br>${escape(biz.bank)}</div>` : ''}
+      </div>
+      <div class="btn-row" style="margin-top:14px">
+        <button class="btn btn-secondary" id="qp-back">Back</button>
+        <button class="btn btn-primary" id="qp-pdf">📄 Open as PDF</button>
+      </div>
+    `;
+    document.getElementById('qp-back').addEventListener('click', () => this.openQuoteForm(null));
+    document.getElementById('qp-pdf').addEventListener('click', () => this._openQuoteAsPDF(q));
+  },
+
+  _openQuoteAsPDF(q) {
+    const subtotal = q.lineItems.reduce((s,li) => s + (li.qty * li.rate), 0);
+    const gst = State.settings.gstMode ? subtotal * 0.1 : 0;
+    const total = subtotal + gst;
+    const biz = State.business;
+    const html = `<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Quote #${escape(q.number)}</title>
+      <style>
+        @page { margin: 18mm; size: A4; }
+        body { font-family: 'Helvetica', Arial, sans-serif; color: #222; padding: 0; max-width: 800px; margin: 0 auto; }
+        .h { display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 2px solid #222; padding-bottom: 14px; margin-bottom: 22px; }
+        .logo { max-width: 140px; max-height: 90px; object-fit: contain; }
+        .biz { text-align: right; font-size: 11px; line-height: 1.5; }
+        .biz strong { display: block; font-size: 17px; margin-bottom: 5px; text-transform: uppercase; letter-spacing: 0.04em; }
+        h1 { font-size: 30px; text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 16px; }
+        .meta { display: grid; grid-template-columns: 1fr 1fr; gap: 22px; font-size: 12px; margin-bottom: 22px; }
+        .meta strong { display: block; font-size: 10px; text-transform: uppercase; letter-spacing: 0.08em; color: #666; margin-bottom: 3px; }
+        table { width: 100%; border-collapse: collapse; margin-bottom: 18px; font-size: 12px; }
+        th { text-align: left; background: #f5f5f5; padding: 8px 10px; font-size: 11px; text-transform: uppercase; letter-spacing: 0.06em; border-bottom: 1px solid #999; }
+        th.r, td.r { text-align: right; }
+        td { padding: 8px 10px; border-bottom: 1px solid #eee; }
+        td.r { font-family: 'Courier New', monospace; }
+        .tot-table { width: 50%; margin-left: auto; font-size: 13px; }
+        .tot-table tr.tot { background: #f5f5f5; font-weight: 700; }
+        .tot-table tr.tot td { border-bottom: 2px solid #222; border-top: 2px solid #222; }
+        .notes { font-size: 11px; color: #555; border-top: 1px solid #eee; padding-top: 12px; margin-top: 22px; line-height: 1.6; white-space: pre-wrap; }
+        .print-btn { position: fixed; top: 20px; right: 20px; padding: 10px 20px; background: #f0a500; color: #111; border: none; font-weight: bold; cursor: pointer; border-radius: 4px; }
+        @media print { .print-btn { display: none; } }
+      </style></head><body>
+      <button class="print-btn" onclick="window.print()">Print / Save as PDF</button>
+      <div class="h">
+        ${biz.logo ? `<img src="${biz.logo}" class="logo">` : '<div></div>'}
+        <div class="biz">
+          <strong>${escape(biz.name || 'Your Business')}</strong>
+          ${biz.abn ? `ABN: ${escape(biz.abn)}<br>` : ''}
+          ${biz.address ? escape(biz.address).replace(/\n/g, '<br>') + '<br>' : ''}
+          ${biz.phone ? escape(biz.phone) + '<br>' : ''}
+          ${biz.email ? escape(biz.email) : ''}
+        </div>
+      </div>
+      <h1>Quote</h1>
+      <div class="meta">
+        <div><strong>Quote To</strong>${escape(q.client || '—')}${q.clientAddress ? '<br>' + escape(q.clientAddress).replace(/\n/g, '<br>') : ''}</div>
+        <div><strong>Quote Details</strong>#${escape(q.number)}<br>Date: ${q.date}${q.validUntil ? '<br>Valid until: ' + q.validUntil : ''}</div>
+      </div>
+      <table>
+        <thead><tr><th>Description</th><th class="r">Qty</th><th class="r">Rate</th><th class="r">Amount</th></tr></thead>
+        <tbody>
+          ${q.lineItems.map(li => `<tr><td>${escape(li.desc)}</td><td class="r">${li.qty}</td><td class="r">${fmt(li.rate)}</td><td class="r">${fmt(li.qty * li.rate)}</td></tr>`).join('')}
+        </tbody>
+      </table>
+      <table class="tot-table">
+        <tr><td>Subtotal</td><td class="r">${fmt(subtotal)}</td></tr>
+        ${State.settings.gstMode ? `<tr><td>GST (10%)</td><td class="r">${fmt(gst)}</td></tr>` : ''}
+        <tr class="tot"><td>Total</td><td class="r">${fmt(total)}</td></tr>
+      </table>
+      ${q.notes ? `<div class="notes">${escape(q.notes)}</div>` : ''}
+      ${biz.bank ? `<div class="notes"><strong>Payment Details</strong><br>${escape(biz.bank)}</div>` : ''}
+      </body></html>`;
+    const blob = new Blob([html], { type: 'text/html' });
+    const url = URL.createObjectURL(blob);
+    window.open(url, '_blank');
+    setTimeout(() => URL.revokeObjectURL(url), 60000);
+    this.toast('Quote opened — use "Print / Save as PDF"');
+  },
+
+  // ── TAX ESTIMATE ───────────────────────────────
+  renderEstimate() {
+    const e = Calc.estimate();
+    const sourceLabel = e.pastGross > 0 ? `${fmt(e.pastGross)} past + ${fmt(e.gross)} logged` : `From ${e.count} logged invoice${e.count !== 1 ? 's' : ''}`;
+    const expensesParts = [];
+    if (e.invoiceMaterials > 0) expensesParts.push(fmt(e.invoiceMaterials) + ' materials');
+    if (e.expenseTotal > 0) expensesParts.push(fmt(e.expenseTotal) + ' expenses');
+    if (e.milDeduction > 0) expensesParts.push(fmt(e.milDeduction) + ' mileage');
+    if (e.assetWriteoff > 0) expensesParts.push(fmt(e.assetWriteoff) + ' write-off');
+    if (e.poolDepNewYear > 0) expensesParts.push(fmt(e.poolDepNewYear) + ' depreciation');
+    if (e.pastExpenses > 0) expensesParts.push(fmt(e.pastExpenses) + ' past');
+    if (e.otherDeductions > 0) expensesParts.push(fmt(e.otherDeductions) + ' other');
+
+    document.getElementById('estimate-breakdown').innerHTML = `
+      <div class="breakdown-row"><span class="bd-label">PAYG Wages</span><span class="bd-val">${fmt(e.paygIncome)}</span></div>
+      <div class="breakdown-row"><span class="bd-label">Business Income<small>${sourceLabel}</small></span><span class="bd-val">${fmt(e.bizGross)}</span></div>
+      <div class="breakdown-row"><span class="bd-label">Deductions<small>${expensesParts.join(' + ') || 'none'}</small></span><span class="bd-val">−${fmt(e.bizExpenses)}</span></div>
+      <div class="breakdown-row"><span class="bd-label">Business Profit</span><span class="bd-val">${fmt(e.bizProfit)}</span></div>
+      <div class="breakdown-row total"><span class="bd-label">Total Taxable Income</span><span class="bd-val">${fmt(e.totalIncome)}</span></div>
+      <div class="breakdown-row"><span class="bd-label">Estimated Tax + Medicare</span><span class="bd-val">${fmt(e.taxOwed)}</span></div>
+      <div class="breakdown-row positive"><span class="bd-label">Credits<small>withheld + extra + ${fmt(e.paygPaidThisFY)} PAYG instalments</small></span><span class="bd-val">−${fmt(e.totalCredits)}</span></div>
+    `;
+    const box = document.getElementById('est-result-box');
+    if (e.refund > 0) {
+      box.classList.add('green'); box.classList.remove('red');
+      document.getElementById('est-result-label').textContent = 'Estimated refund';
+      document.getElementById('est-still-owed').textContent = fmt(e.refund);
+      document.getElementById('est-sub').textContent = 'Credits exceed estimated tax';
+    } else {
+      box.classList.remove('green');
+      document.getElementById('est-result-label').textContent = 'Estimated tax still owed';
+      document.getElementById('est-still-owed').textContent = fmt(e.stillOwed);
+      document.getElementById('est-sub').textContent = 'After all credits and instalments';
+    }
+  },
+
+  // ── BAS / PAYG ─────────────────────────────────
+  renderBAS() {
+    const quarters = Calc.basQuarters();
+    const today_ = today();
+    const el = document.getElementById('bas-quarters');
+    el.innerHTML = quarters.map(q => {
+      const paid = Calc.paygPaidForQuarter(q.q);
+      const isPast = q.due < today_;
+      const days = daysBetween(today_, q.due);
+      const status = isPast && paid === 0 ? 'OVERDUE' : isPast ? 'Done' : `${days} days`;
+      const statusClass = isPast && paid === 0 ? 'urgent' : isPast ? 'ok' : (days < 30 ? 'soon' : '');
+
+      // GST for the quarter
+      let gstStr = '';
+      if (State.settings.gstMode) {
+        const qInv = State.invoices.filter(i => i.date >= q.startDate && i.date <= q.endDate);
+        const qExp = State.expenses.filter(e => e.date >= q.startDate && e.date <= q.endDate);
+        const collected = qInv.reduce((s,i) => s + Calc.gstOf(i.total), 0);
+        const claimed = qExp.filter(e => e.gstClaimable !== false).reduce((s,e) => s + Calc.gstOf(e.amount), 0);
+        gstStr = `<div class="li-meta">GST: ${fmt(collected - claimed)} owed</div>`;
+      }
+
+      return `
+        <div class="due-card ${statusClass}">
+          <div class="due-card-left">
+            <h4>${q.q} · ${q.period}</h4>
+            <div class="due-when">Due ${q.due}${gstStr}</div>
+          </div>
+          <div class="due-card-right">
+            ${paid > 0 ? fmt(paid) + '<br><span style="font-size:10px; color:var(--green)">PAID</span>' : status}
+          </div>
+        </div>`;
+    }).join('');
+  },
+
+  async addPAYG() {
+    const q = document.getElementById('payg-q').value;
+    const amount = parseFloat(document.getElementById('payg-amount').value);
+    if (!amount || amount <= 0) return this.toast('Amount required', true);
+    State.paygPaid.push({ quarter: q, amount, date: today(), fy: State.settings.fy });
+    await State.save('paygPaid');
+    document.getElementById('payg-amount').value = '';
+    this.refreshAll();
+    this.toast('PAYG payment recorded');
+  },
+
+  // ── SET ASIDE ──────────────────────────────────
+  renderSetAside() {
+    const sa = Calc.setAsideStatus();
+    document.getElementById('sa-status').textContent = `${fmt(sa.saved)} / ${fmt(sa.target)}`;
+    const pct = sa.target > 0 ? Math.min(100, (sa.saved / sa.target) * 100) : 0;
+    document.getElementById('sa-progress-bar').style.width = pct + '%';
+    const box = document.getElementById('sa-status-box');
+    if (sa.saved >= sa.target && sa.target > 0) {
+      box.classList.add('green'); box.classList.remove('red');
+      document.getElementById('sa-status-sub').textContent = '✓ On target';
+    } else if (sa.target > 0 && pct < 70) {
+      box.classList.remove('green'); box.classList.add('red');
+      document.getElementById('sa-status-sub').textContent = `Behind by ${fmt(sa.target - sa.saved)}`;
+    } else {
+      box.classList.remove('green'); box.classList.remove('red');
+      document.getElementById('sa-status-sub').textContent = sa.target > 0 ? `${Math.round(pct)}% of target` : 'Add invoices to set a target';
+    }
+
+    const deps = [...State.deposits].sort((a,b) => new Date(b.date) - new Date(a.date));
+    const el = document.getElementById('deposit-list');
+    if (deps.length === 0) { el.innerHTML = '<div class="empty">No deposits yet</div>'; return; }
+    el.innerHTML = deps.map(d => `
+      <div class="list-item green-marker" data-dep-id="${d.id}">
+        <div class="li-left"><div class="li-title">Deposit</div><div class="li-meta">${d.date}</div></div>
+        <div class="li-right"><div class="li-amount">${fmt(d.amount)}</div><button class="btn-danger btn-small" data-rm-dep="${d.id}" style="margin-top:4px">Remove</button></div>
+      </div>
+    `).join('');
+    el.querySelectorAll('[data-rm-dep]').forEach(b => b.addEventListener('click', async e => {
+      e.stopPropagation();
+      State.deposits = State.deposits.filter(d => d.id !== parseFloat(b.dataset.rmDep));
+      await State.save('deposits');
+      this.refreshAll();
+    }));
+  },
+
+  async addDeposit() {
+    const date = document.getElementById('sa-date').value;
+    const amount = parseFloat(document.getElementById('sa-amount').value);
+    if (!amount || amount <= 0) return this.toast('Amount required', true);
+    if (!date) return this.toast('Date required', true);
+    State.deposits.push({ id: newId(), date, amount });
+    await State.save('deposits');
+    document.getElementById('sa-amount').value = '';
+    this.refreshAll();
+    this.toast('Deposit recorded');
+  },
+
+  // ── LOGO / GST / RATE ──────────────────────────
+  async uploadLogo(event) {
+    const file = event.target.files[0]; if (!file) return;
+    this.toast('Compressing logo...');
+    const data = await compressImage(file, 600, 0.85);
+    State.business.logo = data;
+    await State.save('business');
+    this._showLogo(data);
+    event.target.value = '';
+  },
+
+  _showLogo(data) {
+    const img = document.getElementById('logo-preview');
+    img.src = data;
+    img.style.display = 'block';
+    document.getElementById('logo-placeholder').style.display = 'none';
+    document.getElementById('btn-remove-logo').style.display = 'inline-block';
+  },
+
+  async removeLogo() {
+    State.business.logo = null;
+    await State.save('business');
+    document.getElementById('logo-preview').style.display = 'none';
+    document.getElementById('logo-placeholder').style.display = 'block';
+    document.getElementById('btn-remove-logo').style.display = 'none';
+  },
+
+  _applyGSTModeUI(on) {
+    document.querySelectorAll('[data-gst-mode]').forEach(p => {
+      p.classList.toggle('active', (p.dataset.gstMode === 'on') === on);
+    });
+  },
+
+  async setGSTMode(on) {
+    State.settings.gstMode = on;
+    this._applyGSTModeUI(on);
+    await State.save('settings');
+    this.refreshAll();
+    this.toast(`GST mode ${on ? 'ON' : 'OFF'}`);
+  },
+
+  _applyRateModeUI(mode) {
+    document.querySelectorAll('[data-rate-mode]').forEach(p => p.classList.toggle('active', p.dataset.rateMode === mode));
     document.getElementById('auto-rate-info').style.display = mode === 'auto' ? 'block' : 'none';
     document.getElementById('manual-rate-control').style.display = mode === 'manual' ? 'block' : 'none';
   },
@@ -1348,29 +2704,256 @@ const UI = {
   async setRateMode(mode) {
     State.settings.rateMode = mode;
     this._applyRateModeUI(mode);
-    await State.saveSettings();
+    await State.save('settings');
     this.refreshAll();
   },
 
-  renderStorageStatus() {
+  // ── STORAGE STATUS ─────────────────────────────
+  async renderStorageStatus() {
     document.getElementById('ss-db').innerHTML = Storage.available
       ? '<span class="ok">IndexedDB ✓</span>'
       : '<span class="warn">localStorage (fallback)</span>';
     document.getElementById('ss-inv').textContent = State.invoices.length;
+    document.getElementById('ss-exp').textContent = State.expenses.length;
+    document.getElementById('ss-mil').textContent = State.mileage.length;
+    const photos = await Storage.listPhotos();
+    document.getElementById('ss-photos').textContent = photos.length;
     document.getElementById('ss-saved').textContent = State.ui.lastSaved
       ? new Date(State.ui.lastSaved).toLocaleString('en-AU')
       : 'Never';
   },
 
-  flashSaveIndicator() {
-    const el = document.getElementById('save-status');
-    el.classList.add('saved');
-    el.textContent = '● Saved';
-    clearTimeout(this._saveFlashTimer);
-    this._saveFlashTimer = setTimeout(() => {
-      el.classList.remove('saved');
-      el.textContent = '●';
-    }, 1500);
+  // ── EXPORT / IMPORT ────────────────────────────
+  exportData() {
+    const data = {
+      version: 3, exported: new Date().toISOString(),
+      invoices: State.invoices, expenses: State.expenses, mileage: State.mileage,
+      assets: State.assets, quotes: State.quotes, deposits: State.deposits,
+      paygPaid: State.paygPaid, snapshots: State.snapshots, customers: State.customers,
+      business: State.business, settings: State.settings, formState: State.formState
+    };
+    const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `tradie-tax-backup-${today()}.json`;
+    document.body.appendChild(a); a.click(); document.body.removeChild(a);
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+    this.toast('Backup downloaded');
+  },
+
+  async exportPhotos() {
+    const photos = await Storage.listPhotos();
+    if (photos.length === 0) { this.toast('No photos to export', true); return; }
+    // Build a simple HTML page with all photos embedded for download
+    const html = `<!DOCTYPE html><html><head><title>Receipt Photos Backup ${today()}</title>
+      <style>body{font-family:sans-serif; background:#222; color:#fff; padding:20px}
+      .photo{margin-bottom:20px; padding:10px; background:#333; border-radius:4px}
+      .photo h3{margin-bottom:8px} img{max-width:100%; border-radius:3px}</style></head><body>
+      <h1>Receipt Photos — ${today()}</h1><p>${photos.length} photos</p>
+      ${photos.map(p => `<div class="photo"><h3>ID: ${p.id}</h3><img src="${p.data}"></div>`).join('')}
+      </body></html>`;
+    const blob = new Blob([html], { type: 'text/html' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `tradie-tax-photos-${today()}.html`;
+    document.body.appendChild(a); a.click(); document.body.removeChild(a);
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+    this.toast(`${photos.length} photos exported`);
+  },
+
+  importData(event) {
+    const file = event.target.files[0]; if (!file) return;
+    const reader = new FileReader();
+    reader.onload = async e => {
+      try {
+        const data = JSON.parse(e.target.result);
+        ['invoices','expenses','mileage','assets','quotes','deposits','paygPaid','snapshots','customers','business','settings','formState'].forEach(k => {
+          if (data[k] != null) State[k] = data[k];
+        });
+        await State.saveAll();
+        // restore form inputs
+        document.querySelectorAll('[data-persist]').forEach(input => input.value = State.formState[input.id] ?? '');
+        document.querySelectorAll('[data-biz]').forEach(input => {
+          const key = input.id.replace('biz-', '');
+          input.value = State.business[key] ?? '';
+        });
+        if (State.business.logo) this._showLogo(State.business.logo);
+        this._applyGSTModeUI(State.settings.gstMode);
+        this._applyRateModeUI(State.settings.rateMode);
+        document.getElementById('rate-slider').value = State.settings.manualRate;
+        document.getElementById('manual-rate-val').textContent = State.settings.manualRate + '%';
+        document.getElementById('fy-select').value = State.settings.fy;
+        document.getElementById('asset-thresh-input').value = State.settings.assetThreshold;
+        this.updateDrawerName();
+        this.refreshAll();
+        this.toast(`Restored ${State.invoices.length} inv, ${State.expenses.length} exp`);
+      } catch (err) {
+        console.error(err);
+        this.toast('Could not load file', true);
+      }
+    };
+    reader.readAsText(file);
+    event.target.value = '';
+  },
+
+  exportCSVPack(detailed) {
+    const sections = [];
+    const fy = fyLabel(State.settings.fy);
+    sections.push(`Tradie Tax — ${fy}`);
+    sections.push(`Generated ${new Date().toLocaleString('en-AU')}`);
+    sections.push(`Business: ${State.business.name || '(unset)'} · ABN: ${State.business.abn || '(unset)'}`);
+    sections.push('');
+
+    const t = Calc.totals();
+    sections.push('SUMMARY');
+    sections.push(`Gross Income,${t.gross.toFixed(2)}`);
+    sections.push(`Invoice Materials,${t.invoiceMaterials.toFixed(2)}`);
+    sections.push(`Other Expenses,${t.expenseTotal.toFixed(2)}`);
+    sections.push(`Mileage Deduction (${t.milKm} km),${t.milDeduction.toFixed(2)}`);
+    sections.push(`Asset Write-offs,${t.assetWriteoff.toFixed(2)}`);
+    sections.push(`Depreciation,${t.poolDepNewYear.toFixed(2)}`);
+    sections.push(`Total Expenses,${t.totalExpenses.toFixed(2)}`);
+    sections.push(`Net Profit,${t.profit.toFixed(2)}`);
+    if (State.settings.gstMode) {
+      sections.push('');
+      sections.push('GST');
+      sections.push(`GST Collected,${t.gstCollected.toFixed(2)}`);
+      sections.push(`GST Paid,${t.gstPaid.toFixed(2)}`);
+      sections.push(`Net GST Owed,${t.gstOwed.toFixed(2)}`);
+    }
+    sections.push('');
+
+    sections.push('EXPENSES BY CATEGORY');
+    Calc.expensesByCategory().forEach(c => sections.push(`${c.label},${c.total.toFixed(2)}`));
+    sections.push('');
+
+    if (detailed) {
+      sections.push('INVOICES');
+      sections.push('Date,Description,Client,Total,Materials,Paid,Notes');
+      State.invoices.filter(i => inCurrentFY(i.date)).forEach(i => {
+        sections.push([i.date, this._csv(i.desc), this._csv(i.client || ''), i.total, i.materials || 0, i.paid ? 'YES' : 'NO', this._csv(i.notes || '')].join(','));
+      });
+      sections.push('');
+
+      sections.push('EXPENSES');
+      sections.push('Date,Description,Category,Supplier,Amount,GST Claimable,Notes');
+      State.expenses.filter(e => inCurrentFY(e.date)).forEach(e => {
+        sections.push([e.date, this._csv(e.desc), catLabel(e.category), this._csv(e.supplier || ''), e.amount, e.gstClaimable !== false ? 'YES' : 'NO', this._csv(e.notes || '')].join(','));
+      });
+      sections.push('');
+
+      sections.push('MILEAGE');
+      sections.push('Date,Purpose,From,To,KM');
+      State.mileage.filter(m => inCurrentFY(m.date)).forEach(m => {
+        sections.push([m.date, this._csv(m.purpose), this._csv(m.from || ''), this._csv(m.to || ''), m.km].join(','));
+      });
+      sections.push('');
+
+      sections.push('ASSETS');
+      sections.push('Date,Description,Supplier,Amount,Type');
+      State.assets.filter(a => inCurrentFY(a.date)).forEach(a => {
+        const type = a.amount <= State.settings.assetThreshold ? 'Instant write-off' : 'Pool (depreciate)';
+        sections.push([a.date, this._csv(a.desc), this._csv(a.supplier || ''), a.amount, type].join(','));
+      });
+    }
+
+    const blob = new Blob([sections.join('\n')], { type: 'text/csv' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `tradie-tax-${fy}-${detailed ? 'full' : 'summary'}.csv`;
+    document.body.appendChild(a); a.click(); document.body.removeChild(a);
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+    this.toast('CSV exported');
+  },
+
+  _csv(s) {
+    s = String(s || '');
+    if (s.includes(',') || s.includes('"') || s.includes('\n')) {
+      return '"' + s.replace(/"/g, '""') + '"';
+    }
+    return s;
+  },
+
+  async archiveFY() {
+    if (!confirm(`Archive all data for ${fyLabel(State.settings.fy)}? Data stays accessible in snapshots but current totals reset.`)) return;
+    const snapshot = {
+      id: newId(),
+      fy: State.settings.fy,
+      archived: new Date().toISOString(),
+      invoices: State.invoices.filter(i => inCurrentFY(i.date)),
+      expenses: State.expenses.filter(e => inCurrentFY(e.date)),
+      mileage: State.mileage.filter(m => inCurrentFY(m.date)),
+      assets: State.assets.filter(a => inCurrentFY(a.date)),
+      quotes: State.quotes,
+      paygPaid: State.paygPaid.filter(p => p.fy === State.settings.fy),
+      deposits: State.deposits,
+      totals: Calc.totals()
+    };
+    State.snapshots.push(snapshot);
+    // remove the archived items from active state
+    State.invoices = State.invoices.filter(i => !inCurrentFY(i.date));
+    State.expenses = State.expenses.filter(e => !inCurrentFY(e.date));
+    State.mileage = State.mileage.filter(m => !inCurrentFY(m.date));
+    State.assets = State.assets.filter(a => !inCurrentFY(a.date));
+    State.deposits = [];
+    State.paygPaid = State.paygPaid.filter(p => p.fy !== State.settings.fy);
+    await State.saveAll();
+    this.refreshAll();
+    this.renderSnapshots();
+    this.toast(`FY ${fyLabel(snapshot.fy)} archived`);
+  },
+
+  renderSnapshots() {
+    const el = document.getElementById('snapshot-list');
+    if (State.snapshots.length === 0) { el.innerHTML = '<div class="empty">No snapshots</div>'; return; }
+    el.innerHTML = State.snapshots.map(s => `
+      <div class="list-item green-marker">
+        <div class="li-left">
+          <div class="li-title">${fyLabel(s.fy)}</div>
+          <div class="li-meta">Archived ${s.archived.split('T')[0]} · ${s.invoices.length} inv · ${s.expenses.length} exp · profit ${fmt(s.totals.profit)}</div>
+        </div>
+      </div>
+    `).join('');
+  },
+
+  async clearData() {
+    if (!confirm('Delete ALL data permanently? This cannot be undone.')) return;
+    if (!confirm('Really sure? This wipes invoices, expenses, photos, business details, everything.')) return;
+    await Storage.clear();
+    Object.assign(State, {
+      invoices: [], expenses: [], mileage: [], assets: [], quotes: [],
+      deposits: [], paygPaid: [], snapshots: [], customers: [],
+      business: { name: '', abn: '', phone: '', email: '', address: '', bank: '', logo: null },
+      settings: { rateMode: 'auto', manualRate: 27, fy: '2026', gstMode: false, assetThreshold: 20000 },
+      formState: { 'payg-income': '', 'payg-withheld': '', 'payg-extra': '', 'ytd-gross': '', 'ytd-materials': '', 'other-deductions': '' }
+    });
+    document.querySelectorAll('[data-persist]').forEach(i => i.value = '');
+    document.querySelectorAll('[data-biz]').forEach(i => i.value = '');
+    document.getElementById('logo-preview').style.display = 'none';
+    document.getElementById('logo-placeholder').style.display = 'block';
+    document.getElementById('btn-remove-logo').style.display = 'none';
+    document.getElementById('rate-slider').value = 27;
+    document.getElementById('manual-rate-val').textContent = '27%';
+    document.getElementById('fy-select').value = '2026';
+    document.getElementById('asset-thresh-input').value = 20000;
+    this._applyRateModeUI('auto');
+    this._applyGSTModeUI(false);
+    this.updateDrawerName();
+    this.refreshAll();
+    this.toast('All data cleared');
+    this.showPage('dashboard');
+  },
+
+  // ── MODAL / TOAST / LIGHTBOX ───────────────────
+  _showModal() { document.getElementById('modal').classList.add('open'); },
+  closeModal() { document.getElementById('modal').classList.remove('open'); },
+
+  showLightbox(src) {
+    document.getElementById('lightbox-img').src = src;
+    document.getElementById('lightbox').classList.add('open');
   },
 
   toast(msg, isError = false) {
@@ -1378,83 +2961,16 @@ const UI = {
     el.textContent = msg;
     el.classList.toggle('error', isError);
     el.classList.add('show');
-    clearTimeout(this._toastTimer);
-    this._toastTimer = setTimeout(() => el.classList.remove('show'), 2200);
+    clearTimeout(this._toast);
+    this._toast = setTimeout(() => el.classList.remove('show'), 2000);
   },
 
-  exportData() {
-    const data = {
-      version: 2,
-      exported: new Date().toISOString(),
-      invoices: State.invoices,
-      settings: State.settings,
-      formState: State.formState
-    };
-    const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `tradie-tax-backup-${new Date().toISOString().split('T')[0]}.json`;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    setTimeout(() => URL.revokeObjectURL(url), 1000);
-    this.toast('Backup downloaded');
-  },
-
-  importData(event) {
-    const file = event.target.files[0];
-    if (!file) return;
-    const reader = new FileReader();
-    reader.onload = async e => {
-      try {
-        const data = JSON.parse(e.target.result);
-        if (!data || (!Array.isArray(data.invoices) && !data.settings)) {
-          throw new Error('Invalid backup file');
-        }
-        if (Array.isArray(data.invoices)) State.invoices = data.invoices;
-        if (data.settings) State.settings = { ...State.settings, ...data.settings };
-        if (data.formState) State.formState = { ...State.formState, ...data.formState };
-        await State.saveAll();
-
-        document.querySelectorAll('[data-persist]').forEach(input => {
-          input.value = State.formState[input.id] ?? '';
-        });
-        document.getElementById('rate-slider').value = State.settings.manualRate;
-        document.getElementById('manual-rate-val').textContent = State.settings.manualRate + '%';
-        document.getElementById('fy-select').value = State.settings.fy;
-        this._applyRateModeUI(State.settings.rateMode);
-
-        this.refreshAll();
-        this.renderStorageStatus();
-        this.toast(`Loaded ${State.invoices.length} invoices`);
-      } catch (err) {
-        console.error(err);
-        this.toast('Could not load that file', true);
-      }
-    };
-    reader.readAsText(file);
-    event.target.value = '';
-  },
-
-  async clearData() {
-    if (!confirm('Delete all invoices, form data, and reset settings? This cannot be undone.')) return;
-    await Storage.clear();
-    State.invoices = [];
-    State.settings = { rateMode: 'auto', manualRate: 27, fy: '2026' };
-    State.formState = {
-      'payg-income': '', 'payg-withheld': '', 'payg-extra': '',
-      'ytd-gross': '', 'ytd-materials': '', 'other-deductions': ''
-    };
-    document.querySelectorAll('[data-persist]').forEach(i => i.value = '');
-    document.getElementById('rate-slider').value = 27;
-    document.getElementById('manual-rate-val').textContent = '27%';
-    document.getElementById('fy-select').value = '2026';
-    this._applyRateModeUI('auto');
-    this.refreshAll();
-    this.renderStorageStatus();
-    this.toast('All data cleared');
-    this.showPage('dashboard');
+  flashSaveIndicator() {
+    const el = document.getElementById('save-status');
+    el.classList.add('saved');
+    el.textContent = '● Saved';
+    clearTimeout(this._saveFlash);
+    this._saveFlash = setTimeout(() => { el.classList.remove('saved'); el.textContent = '●'; }, 1200);
   }
 };
 
@@ -1469,21 +2985,20 @@ const UI = {
   UI.renderStorageStatus();
 })();
 
-// final safety net: synchronous localStorage flush on unload
 window.addEventListener('beforeunload', () => {
   try {
-    localStorage.setItem('ttt_' + KEY_INVOICES, JSON.stringify(State.invoices));
-    localStorage.setItem('ttt_' + KEY_SETTINGS, JSON.stringify(State.settings));
-    localStorage.setItem('ttt_' + KEY_FORM, JSON.stringify(State.formState));
+    ['invoices','expenses','mileage','assets','quotes','deposits','paygPaid','snapshots','customers','business','settings','formState'].forEach(k => {
+      localStorage.setItem('ttt_' + k, JSON.stringify(State[k]));
+    });
   } catch {}
 });
 
-// Register service worker for offline support
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
-    navigator.serviceWorker.register('sw.js').catch(err => console.warn('SW registration failed', err));
+    navigator.serviceWorker.register('sw.js').catch(err => console.warn('SW reg failed', err));
   });
 }
+
 </script>
 </body>
 </html>
