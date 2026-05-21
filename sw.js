@@ -1,7 +1,7 @@
 // Service worker for Tradie Tax Tracker
 // Caches the app shell for offline use
 
-const CACHE_NAME = 'tradie-tax-v1';
+const CACHE_NAME = 'tradie-tax-v2';
 const ASSETS = [
   './',
   './index.html',
