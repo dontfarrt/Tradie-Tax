@@ -805,7 +805,7 @@
 <section id="page-estimate" class="page">
   <div class="section-header">FY Tax Estimate</div>
   <div class="info-box">
-    Rough guide only. Uses ATO resident individual rates + 2% Medicare levy. Not financial advice — verify with a registered tax agent.
+    Rough guide only. Uses 2025–26 ATO resident rates + 2% Medicare levy. Not financial advice — verify with a registered tax agent.
   </div>
 
   <div class="section-header">Employment Income (PAYG)</div>
@@ -1383,33 +1383,57 @@ const Calc = {
     return this.estimateMarginalRate(this.projectAnnualProfit()) / 100;
   },
 
+  // Estimates total annual TAXABLE INCOME for picking a marginal rate.
+  // Includes PAYG wages + business profit (logged + historical).
+  // When historical figures are present (e.g. first year), they capture the
+  // earlier part of the year, so we treat the combined figure as the full-year
+  // picture rather than extrapolating. If there's no historical data and only
+  // a short run of logged invoices, we annualise the logged profit so the rate
+  // isn't pitched too low early in the year.
   projectAnnualProfit() {
-    const inv = State.invoices.filter(i => inCurrentFY(i.date));
-    if (inv.length === 0) return 0;
-    const sorted = [...inv].sort((a,b) => new Date(a.date) - new Date(b.date));
-    const first = new Date(sorted[0].date);
-    const last = new Date(sorted[sorted.length-1].date);
-    const daySpan = Math.max(1, (last - first) / 86400000);
-    const t = this.totals();
-    if (daySpan < 14) return t.profit;
-    return (t.profit / daySpan) * 365;
+    const f = State.formState;
+    const num = k => parseFloat(f[k]) || 0;
+    const paygIncome = num('payg-income');
+    const hasHistorical = (num('ytd-gross') + num('ytd-materials') + num('other-deductions')) > 0;
+
+    const t = this.totals();              // includes historical by default
+    const tLogged = this.totals(false);   // logged only, no historical
+
+    let businessProfit;
+    if (hasHistorical) {
+      // Historical data present → treat combined profit as the full-year figure
+      businessProfit = t.profit;
+    } else {
+      // No historical → annualise the logged profit over the invoice date span
+      const inv = State.invoices.filter(i => inCurrentFY(i.date));
+      if (inv.length === 0) {
+        businessProfit = 0;
+      } else {
+        const sorted = [...inv].sort((a,b) => new Date(a.date) - new Date(b.date));
+        const daySpan = Math.max(1, (new Date(sorted[sorted.length-1].date) - new Date(sorted[0].date)) / 86400000);
+        businessProfit = daySpan < 14 ? tLogged.profit : (tLogged.profit / daySpan) * 365;
+      }
+    }
+    return Math.max(0, paygIncome + businessProfit);
   },
 
+  // 2025-26 resident marginal rates incl. 2% Medicare (rounded for the rate picker)
   estimateMarginalRate(income) {
-    if (income <= 18200) return 2;
-    if (income <= 45000) return 21;
-    if (income <= 120000) return 34.5;
-    if (income <= 180000) return 39;
-    return 47;
+    if (income <= 18200) return 0;
+    if (income <= 45000) return 18;   // 16% + 2%
+    if (income <= 135000) return 32;  // 30% + 2%
+    if (income <= 190000) return 39;  // 37% + 2%
+    return 47;                        // 45% + 2%
   },
 
+  // 2025-26 resident income tax (Stage 3 brackets) + 2% Medicare levy
   calcTaxOwed(income) {
     let tax = 0;
     if (income <= 18200) tax = 0;
-    else if (income <= 45000) tax = (income - 18200) * 0.19;
-    else if (income <= 120000) tax = 5092 + (income - 45000) * 0.325;
-    else if (income <= 180000) tax = 29467 + (income - 120000) * 0.37;
-    else tax = 51667 + (income - 180000) * 0.45;
+    else if (income <= 45000) tax = (income - 18200) * 0.16;
+    else if (income <= 135000) tax = 4288 + (income - 45000) * 0.30;
+    else if (income <= 190000) tax = 31288 + (income - 135000) * 0.37;
+    else tax = 51638 + (income - 190000) * 0.45;
     const medicare = income > 26000 ? income * 0.02 : 0;
     return tax + medicare;
   },
