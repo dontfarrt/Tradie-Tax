@@ -662,9 +662,9 @@
 <!-- ── DASHBOARD ──────────────────────────────────── -->
 <section id="page-dashboard" class="page active">
   <div class="set-aside-box" id="dash-setaside-box">
-    <div class="set-aside-label">Tax to set aside</div>
+    <div class="set-aside-label" id="dash-setaside-label">Tax to set aside</div>
     <div class="set-aside-amount" id="dash-setaside">$0.00</div>
-    <div class="set-aside-sub" id="dash-setaside-sub">Based on <span id="dash-rate">27</span>% of profit</div>
+    <div class="set-aside-sub" id="dash-setaside-sub">Estimated tax owed at lodgement</div>
     <div class="set-aside-progress" id="dash-setaside-progress-wrap" style="display:none">
       <div class="set-aside-progress-bar" id="dash-setaside-progress" style="width:0%"></div>
     </div>
@@ -851,8 +851,22 @@
   </div>
 
   <div class="divider"></div>
+  <div class="section-header">HELP / HECS Debt</div>
+  <div class="info-box blue">
+    Enter your current HELP/HECS balance from myGov. As a sole trader, nothing's withheld against your business income for this — so it lands at lodgement. <strong>2025-26:</strong> nil under $67k repayment income, then 15c per $ to $125k. Leave blank if you have no debt.
+  </div>
+  <div class="form-group">
+    <label for="hecs-debt">Outstanding HELP/HECS Balance ($)</label>
+    <input type="number" id="hecs-debt" placeholder="0" inputmode="decimal" data-persist>
+    <div class="field-hint">Tip: the ATO applied a one-off 20% debt reduction on 1 June 2025 — check your current myGov figure.</div>
+  </div>
+
+  <div class="divider"></div>
   <div class="section-header">Estimate</div>
   <div class="breakdown" id="estimate-breakdown"></div>
+  <div class="info-box warning" id="est-loss-note" style="display:none">
+    <strong>Business loss:</strong> Your deductions exceed your business income this year. This tool floors business profit at $0, so the loss isn't reducing your other (PAYG) income here. Business losses <em>may</em> be able to offset other income, but only if you meet the ATO's non-commercial loss rules — talk to your tax agent, as this can be worth real money.
+  </div>
   <div class="set-aside-box" id="est-result-box" style="margin-top:12px">
     <div class="set-aside-label" id="est-result-label">Estimated tax still owed</div>
     <div class="set-aside-amount" id="est-still-owed">$0.00</div>
@@ -1262,7 +1276,7 @@ const State = {
   },
   formState: {
     'payg-income': '', 'payg-withheld': '', 'payg-extra': '',
-    'ytd-gross': '', 'ytd-materials': '', 'other-deductions': ''
+    'ytd-gross': '', 'ytd-materials': '', 'other-deductions': '', 'hecs-debt': ''
   },
   ui: { lastSaved: null, modalContext: null, expCatFilter: 'all', invFilter: 'all', quoteFilter: 'all' },
 
@@ -1426,7 +1440,18 @@ const Calc = {
     return 47;                        // 45% + 2%
   },
 
-  // 2025-26 resident income tax (Stage 3 brackets) + 2% Medicare levy
+  // 2025-26 Medicare levy with low-income phase-in.
+  // Nil up to $27,222; phases in at 10c per $ above that until the full 2%
+  // applies (~$34,027); 2% flat thereafter.
+  medicareLevy(income) {
+    const lower = 27222;
+    if (income <= lower) return 0;
+    const phaseIn = (income - lower) * 0.10;  // 10c per dollar over threshold
+    const full = income * 0.02;
+    return Math.min(phaseIn, full);
+  },
+
+  // 2025-26 resident income tax (Stage 3 brackets) + Medicare levy
   calcTaxOwed(income) {
     let tax = 0;
     if (income <= 18200) tax = 0;
@@ -1434,8 +1459,23 @@ const Calc = {
     else if (income <= 135000) tax = 4288 + (income - 45000) * 0.30;
     else if (income <= 190000) tax = 31288 + (income - 135000) * 0.37;
     else tax = 51638 + (income - 190000) * 0.45;
-    const medicare = income > 26000 ? income * 0.02 : 0;
-    return tax + medicare;
+    return tax + this.medicareLevy(income);
+  },
+
+  // 2025-26 HELP/HECS compulsory repayment (new marginal system).
+  // Nil below $67,000; 15c per $ from $67,001–$125,000; $8,700 + 17c per $
+  // above $125,000; at $179,286+ a flat 10% of TOTAL income applies (whichever
+  // path gives the higher figure at the top). Repayment income = whole income
+  // (PAYG wages + business profit), and the repayment is capped at the debt owed.
+  hecsRepayment(income, debt) {
+    if (!debt || debt <= 0) return 0;
+    let repay;
+    if (income <= 67000) repay = 0;
+    else if (income <= 125000) repay = (income - 67000) * 0.15;
+    else repay = 8700 + (income - 125000) * 0.17;
+    // High earners: flat 10% of total income if that's higher
+    if (income >= 179286) repay = Math.max(repay, income * 0.10);
+    return Math.min(repay, debt);   // never repay more than you owe
   },
 
   estimate() {
@@ -1449,9 +1489,18 @@ const Calc = {
     const t = this.totals();
     const bizGross = t.gross;
     const bizExpenses = t.totalExpenses;
-    const bizProfit = Math.max(0, bizGross - bizExpenses);
+    const rawBizProfit = bizGross - bizExpenses;
+    const bizProfit = Math.max(0, rawBizProfit);
+    const isLoss = rawBizProfit < 0;   // business ran at a loss this FY
     const totalIncome = paygIncome + bizProfit;
-    const taxOwed = this.calcTaxOwed(totalIncome);
+    const incomeTax = this.calcTaxOwed(totalIncome);
+
+    // HELP/HECS compulsory repayment (on whole repayment income, capped at debt)
+    const hecsDebt = num('hecs-debt');
+    const hecsRepay = this.hecsRepayment(totalIncome, hecsDebt);
+
+    // Total liability for the year = income tax + Medicare + HECS
+    const taxOwed = incomeTax + hecsRepay;
 
     // PAYG instalments paid this FY
     const paygPaidThisFY = State.paygPaid
@@ -1464,17 +1513,36 @@ const Calc = {
 
     return {
       paygIncome, withheld, extraPaid,
-      bizGross, bizExpenses, bizProfit,
-      totalIncome, taxOwed, totalCredits, paygPaidThisFY,
+      bizGross, bizExpenses, bizProfit, rawBizProfit, isLoss,
+      totalIncome, incomeTax, hecsDebt, hecsRepay, taxOwed,
+      totalCredits, paygPaidThisFY,
       stillOwed, refund, ...t
     };
   },
 
-  // Deposits saved vs target
+  // Set-aside target = the ACTUAL extra tax you'll owe at lodgement.
+  // This is the same "still owed" figure the estimate produces, so the two
+  // pages reconcile: if PAYG withholding already covers your business profit
+  // (i.e. you're due a refund), the target is $0 — you don't need to quarantine
+  // anything. If you'll owe at lodgement, the target equals that shortfall.
   setAsideStatus() {
-    const targetTotal = this.totals().profit * this.currentRate();
+    const e = this.estimate();
+    const target = e.stillOwed;   // already max(0, taxOwed - credits)
     const saved = State.deposits.reduce((s,d) => s + d.amount, 0);
-    return { target: Math.max(0, targetTotal), saved, diff: saved - Math.max(0, targetTotal) };
+    return {
+      target: Math.max(0, target),
+      saved,
+      diff: saved - Math.max(0, target),
+      refund: e.refund,
+      isRefund: e.refund > 0
+    };
+  },
+
+  // Rough marginal tax a single invoice's profit adds, for the per-invoice
+  // "→ set aside" hint. This is the marginal rate applied to that invoice's
+  // profit — a quick guide only, NOT the reconciled lodgement figure.
+  invoiceSetAside(inv) {
+    return this.invoiceProfit(inv) * this.currentRate();
   },
 
   // Overdue invoices (>30 days since date and unpaid)
@@ -1703,13 +1771,42 @@ const UI = {
   // ── DASHBOARD ──────────────────────────────────
   renderDashboard() {
     const t = Calc.totals();
-    const rate = Math.round(Calc.currentRate() * 100);
     const sa = Calc.setAsideStatus();
+    const box = document.getElementById('dash-setaside-box');
+    const label = document.getElementById('dash-setaside-label');
+    const sub = document.getElementById('dash-setaside-sub');
     document.getElementById('dash-gross').textContent = fmt(t.gross);
     document.getElementById('dash-expenses').textContent = fmt(t.totalExpenses);
     document.getElementById('dash-profit').textContent = fmt(t.profit);
-    document.getElementById('dash-setaside').textContent = fmt(sa.target);
-    document.getElementById('dash-rate').textContent = rate;
+
+    const progressEl = document.getElementById('dash-setaside-progress');
+    const wrapEl = document.getElementById('dash-setaside-progress-wrap');
+    const savedEl = document.getElementById('dash-setaside-saved');
+
+    if (sa.isRefund) {
+      // PAYG withholding already covers the business tax — estimated refund
+      box.classList.add('green'); box.classList.remove('red');
+      label.textContent = 'Estimated refund';
+      document.getElementById('dash-setaside').textContent = fmt(sa.refund);
+      sub.textContent = 'PAYG withholding covers your tax — nothing to set aside';
+      wrapEl.style.display = 'none'; savedEl.style.display = 'none';
+    } else {
+      label.textContent = 'Tax to set aside';
+      document.getElementById('dash-setaside').textContent = fmt(sa.target);
+      sub.textContent = 'Estimated tax owed at lodgement';
+      if (sa.target > 0) {
+        box.classList.toggle('green', sa.saved >= sa.target);
+        box.classList.toggle('red', sa.saved < sa.target * 0.7);
+        const pct = Math.min(100, (sa.saved / sa.target) * 100);
+        wrapEl.style.display = 'block'; savedEl.style.display = 'block';
+        progressEl.style.width = pct + '%';
+        savedEl.textContent = `${fmt(sa.saved)} saved · ${Math.round(pct)}% of target`;
+      } else {
+        box.classList.remove('green'); box.classList.remove('red');
+        wrapEl.style.display = 'none'; savedEl.style.display = 'none';
+        sub.textContent = 'Add income to estimate your tax';
+      }
+    }
 
     // Historical inclusion sub-labels on income/expense tiles
     const hasHistorical = (t.pastGross + t.pastExpenses + t.otherDeductions) > 0;
@@ -1723,9 +1820,7 @@ const UI = {
     }
     if (expSub) {
       const histExp = t.pastExpenses + t.otherDeductions;
-      expSub.textContent = histExp > 0
-        ? `Incl. ${fmt(histExp)} past/other`
-        : '';
+      expSub.textContent = histExp > 0 ? `Incl. ${fmt(histExp)} past/other` : '';
       expSub.style.display = histExp > 0 ? 'block' : 'none';
     }
 
@@ -1734,25 +1829,11 @@ const UI = {
     document.getElementById('dash-overdue').textContent = overdue.length;
     document.getElementById('dash-overdue-amt').textContent = fmt(overdue.reduce((s,i) => s + i.total, 0)) + ' owed';
 
-    // Saved progress
-    const progressEl = document.getElementById('dash-setaside-progress');
-    const wrapEl = document.getElementById('dash-setaside-progress-wrap');
-    const savedEl = document.getElementById('dash-setaside-saved');
-    if (sa.target > 0) {
-      const pct = Math.min(100, (sa.saved / sa.target) * 100);
-      wrapEl.style.display = 'block'; savedEl.style.display = 'block';
-      progressEl.style.width = pct + '%';
-      savedEl.textContent = `${fmt(sa.saved)} saved · ${Math.round(pct)}% of target`;
-    } else { wrapEl.style.display = 'none'; savedEl.style.display = 'none'; }
-
     // GST warning
     document.getElementById('gst-warning').style.display =
       (t.gross >= 65000 && !State.settings.gstMode) ? 'block' : 'none';
 
-    // Due dates
     this._renderDueSoon();
-
-    // Recent activity
     this._renderRecent();
   },
 
@@ -1831,7 +1912,7 @@ const UI = {
 
   _invoiceHTML(inv, showEdit = false) {
     const profit = Calc.invoiceProfit(inv);
-    const setaside = profit * Calc.currentRate();
+    const setaside = Calc.invoiceSetAside(inv);
     const days = daysBetween(inv.date, today());
     const overdue = !inv.paid && days > 30;
     return `
@@ -2406,7 +2487,7 @@ const UI = {
     const renderLines = () => {
       const c = document.getElementById('line-items-list');
       c.innerHTML = lineItems.map((li, idx) => `
-        <div class="line-item">
+        <div class="line-item" data-line="${idx}">
           <div class="line-item-header">
             <span class="label">Item ${idx+1}</span>
             ${lineItems.length > 1 ? `<button class="btn-danger btn-small" data-rm="${idx}">✕</button>` : ''}
@@ -2416,20 +2497,29 @@ const UI = {
             <input type="number" placeholder="Qty" step="0.01" inputmode="decimal" data-li-qty="${idx}" value="${li.qty}">
             <input type="number" placeholder="Rate ($)" step="0.01" inputmode="decimal" data-li-rate="${idx}" value="${li.rate}">
           </div>
-          <div style="text-align:right; font-family:var(--font-mono); font-size:13px; margin-top:6px; color:var(--accent)">${fmt(li.qty * li.rate)}</div>
+          <div class="line-total" data-li-total="${idx}" style="text-align:right; font-family:var(--font-mono); font-size:13px; margin-top:6px; color:var(--accent)">${fmt(li.qty * li.rate)}</div>
         </div>
       `).join('');
+
+      // Update only the affected line's total — does NOT touch the input being
+      // typed in, so focus (and the mobile keyboard) is preserved.
+      const updateLineTotal = (idx) => {
+        const el = c.querySelector(`[data-li-total="${idx}"]`);
+        if (el) el.textContent = fmt(lineItems[idx].qty * lineItems[idx].rate);
+      };
 
       c.querySelectorAll('[data-li-desc]').forEach(i => i.addEventListener('input', e => {
         lineItems[parseInt(e.target.dataset.liDesc)].desc = e.target.value;
       }));
       c.querySelectorAll('[data-li-qty]').forEach(i => i.addEventListener('input', e => {
-        lineItems[parseInt(e.target.dataset.liQty)].qty = parseFloat(e.target.value) || 0;
-        renderLines();
+        const idx = parseInt(e.target.dataset.liQty);
+        lineItems[idx].qty = parseFloat(e.target.value) || 0;
+        updateLineTotal(idx);
       }));
       c.querySelectorAll('[data-li-rate]').forEach(i => i.addEventListener('input', e => {
-        lineItems[parseInt(e.target.dataset.liRate)].rate = parseFloat(e.target.value) || 0;
-        renderLines();
+        const idx = parseInt(e.target.dataset.liRate);
+        lineItems[idx].rate = parseFloat(e.target.value) || 0;
+        updateLineTotal(idx);
       }));
       c.querySelectorAll('[data-rm]').forEach(b => b.addEventListener('click', () => {
         lineItems.splice(parseInt(b.dataset.rm), 1);
@@ -2737,22 +2827,35 @@ const UI = {
       <div class="breakdown-row"><span class="bd-label">PAYG Wages</span><span class="bd-val">${fmt(e.paygIncome)}</span></div>
       <div class="breakdown-row"><span class="bd-label">Business Income<small>${sourceLabel}</small></span><span class="bd-val">${fmt(e.bizGross)}</span></div>
       <div class="breakdown-row"><span class="bd-label">Deductions<small>${expensesParts.join(' + ') || 'none'}</small></span><span class="bd-val">−${fmt(e.bizExpenses)}</span></div>
-      <div class="breakdown-row"><span class="bd-label">Business Profit</span><span class="bd-val">${fmt(e.bizProfit)}</span></div>
+      <div class="breakdown-row"><span class="bd-label">Business ${e.isLoss ? 'Loss' : 'Profit'}</span><span class="bd-val">${e.isLoss ? '−' + fmt(Math.abs(e.rawBizProfit)) : fmt(e.bizProfit)}</span></div>
       <div class="breakdown-row total"><span class="bd-label">Total Taxable Income</span><span class="bd-val">${fmt(e.totalIncome)}</span></div>
-      <div class="breakdown-row"><span class="bd-label">Estimated Tax + Medicare</span><span class="bd-val">${fmt(e.taxOwed)}</span></div>
+      <div class="breakdown-row"><span class="bd-label">Income Tax + Medicare</span><span class="bd-val">${fmt(e.incomeTax)}</span></div>
+      ${e.hecsRepay > 0 ? `<div class="breakdown-row"><span class="bd-label">HELP/HECS Repayment<small>on ${fmt(e.totalIncome)} repayment income</small></span><span class="bd-val">${fmt(e.hecsRepay)}</span></div>` : ''}
+      ${e.hecsRepay > 0 ? `<div class="breakdown-row total"><span class="bd-label">Total Liability</span><span class="bd-val">${fmt(e.taxOwed)}</span></div>` : ''}
       <div class="breakdown-row positive"><span class="bd-label">Credits<small>withheld + extra + ${fmt(e.paygPaidThisFY)} PAYG instalments</small></span><span class="bd-val">−${fmt(e.totalCredits)}</span></div>
     `;
+
+    // Loss note
+    const lossNote = document.getElementById('est-loss-note');
+    if (e.isLoss) {
+      if (lossNote) lossNote.style.display = 'block';
+    } else {
+      if (lossNote) lossNote.style.display = 'none';
+    }
+
     const box = document.getElementById('est-result-box');
     if (e.refund > 0) {
       box.classList.add('green'); box.classList.remove('red');
       document.getElementById('est-result-label').textContent = 'Estimated refund';
       document.getElementById('est-still-owed').textContent = fmt(e.refund);
-      document.getElementById('est-sub').textContent = 'Credits exceed estimated tax';
+      document.getElementById('est-sub').textContent = e.hecsRepay > 0
+        ? 'Credits exceed tax + HECS' : 'Credits exceed estimated tax';
     } else {
       box.classList.remove('green');
       document.getElementById('est-result-label').textContent = 'Estimated tax still owed';
       document.getElementById('est-still-owed').textContent = fmt(e.stillOwed);
-      document.getElementById('est-sub').textContent = 'After all credits and instalments';
+      document.getElementById('est-sub').textContent = e.hecsRepay > 0
+        ? 'Incl. HELP/HECS · after all credits' : 'After all credits and instalments';
     }
   },
 
@@ -2805,19 +2908,28 @@ const UI = {
   // ── SET ASIDE ──────────────────────────────────
   renderSetAside() {
     const sa = Calc.setAsideStatus();
-    document.getElementById('sa-status').textContent = `${fmt(sa.saved)} / ${fmt(sa.target)}`;
-    const pct = sa.target > 0 ? Math.min(100, (sa.saved / sa.target) * 100) : 0;
-    document.getElementById('sa-progress-bar').style.width = pct + '%';
     const box = document.getElementById('sa-status-box');
-    if (sa.saved >= sa.target && sa.target > 0) {
+    const sub = document.getElementById('sa-status-sub');
+
+    if (sa.isRefund) {
       box.classList.add('green'); box.classList.remove('red');
-      document.getElementById('sa-status-sub').textContent = '✓ On target';
-    } else if (sa.target > 0 && pct < 70) {
-      box.classList.remove('green'); box.classList.add('red');
-      document.getElementById('sa-status-sub').textContent = `Behind by ${fmt(sa.target - sa.saved)}`;
+      document.getElementById('sa-status').textContent = `Refund ${fmt(sa.refund)}`;
+      document.getElementById('sa-progress-bar').style.width = '100%';
+      sub.textContent = 'PAYG withholding covers your tax — no set-aside needed';
     } else {
-      box.classList.remove('green'); box.classList.remove('red');
-      document.getElementById('sa-status-sub').textContent = sa.target > 0 ? `${Math.round(pct)}% of target` : 'Add invoices to set a target';
+      document.getElementById('sa-status').textContent = `${fmt(sa.saved)} / ${fmt(sa.target)}`;
+      const pct = sa.target > 0 ? Math.min(100, (sa.saved / sa.target) * 100) : 0;
+      document.getElementById('sa-progress-bar').style.width = pct + '%';
+      if (sa.saved >= sa.target && sa.target > 0) {
+        box.classList.add('green'); box.classList.remove('red');
+        sub.textContent = '✓ On target';
+      } else if (sa.target > 0 && pct < 70) {
+        box.classList.remove('green'); box.classList.add('red');
+        sub.textContent = `Behind by ${fmt(sa.target - sa.saved)}`;
+      } else {
+        box.classList.remove('green'); box.classList.remove('red');
+        sub.textContent = sa.target > 0 ? `${Math.round(pct)}% of target` : 'Add income to set a target';
+      }
     }
 
     const deps = [...State.deposits].sort((a,b) => new Date(b.date) - new Date(a.date));
@@ -3020,6 +3132,18 @@ const UI = {
       sections.push(`GST Paid,${t.gstPaid.toFixed(2)}`);
       sections.push(`Net GST Owed,${t.gstOwed.toFixed(2)}`);
     }
+    const est = Calc.estimate();
+    sections.push('');
+    sections.push('TAX ESTIMATE');
+    sections.push(`Total Taxable Income,${est.totalIncome.toFixed(2)}`);
+    sections.push(`Income Tax + Medicare,${est.incomeTax.toFixed(2)}`);
+    if (est.hecsRepay > 0) {
+      sections.push(`HELP/HECS Repayment,${est.hecsRepay.toFixed(2)}`);
+      sections.push(`HELP/HECS Balance Entered,${est.hecsDebt.toFixed(2)}`);
+    }
+    sections.push(`Total Liability,${est.taxOwed.toFixed(2)}`);
+    sections.push(`Credits (withheld + instalments),${est.totalCredits.toFixed(2)}`);
+    sections.push(`${est.refund > 0 ? 'Estimated Refund' : 'Estimated Tax Owed'},${(est.refund > 0 ? est.refund : est.stillOwed).toFixed(2)}`);
     sections.push('');
 
     sections.push('EXPENSES BY CATEGORY');

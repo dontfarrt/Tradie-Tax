@@ -2,7 +2,7 @@
 //  Tradie Tax Tracker — Service Worker
 //  Bump CACHE_VERSION whenever you update index.html
 // ════════════════════════════════════════════════════
-const CACHE_VERSION = 'v4';
+const CACHE_VERSION = 'v6';
 const CACHE_NAME = `tradie-tax-${CACHE_VERSION}`;
 
 const ASSETS = [
